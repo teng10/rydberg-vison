@@ -1,3 +1,6 @@
+import numpy as np
+import einops
+
 def elemetntaryLoop(type, anchor):
   """
   Generate coordinates for a pair of triangles (t1, t2), boundary bonds coordinates, and middle bond coordinates.

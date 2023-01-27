@@ -2,6 +2,11 @@
 
 import numpy as np
 import einops
+import shapely
+from shapely.geometry.polygon import Polygon
+
+from typing import Any, Callable, Tuple, Union
+Array = np.ndarray
 
 def create_grid_mesh(params):
   kx1 = params['x1']
@@ -36,3 +41,22 @@ def create_grid(params):
   my_grid = einops.rearrange(my_grid, 'x y d -> (x y) d') #integer grid
 
   return np.tensordot(my_grid[:, 0], a1, 0) + np.tensordot(my_grid[:, 1], a2, 0)
+
+def convert_to_XY(
+    pts: Array)-> Tuple[Array]:
+  return zip((pts[:, 0], pts[:, 1]))  
+
+def get_contained_pts_poly(
+    pts: Array, 
+    poly: Any)-> Array:
+  '''
+  Util function getting points contained in `polygon` from an array of points `pts`.
+  '''
+  pts_cut = []
+  # check if points live in the polygon region
+  for i, pt in enumerate(list(pts)):
+    # print(pt.shape)
+    poly_pt = shapely.Point(pt)
+    if poly.contains(poly_pt):
+      pts_cut.append(pt)
+  return np.stack(pts_cut, 0)
