@@ -1,5 +1,8 @@
 #Create a Lattice class?
 
+import numpy as np
+import einops
+
 def create_grid_mesh(params):
   kx1 = params['x1']
   kx2 = params['x2']
