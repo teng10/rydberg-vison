@@ -1,3 +1,7 @@
+from scipy.spatial.distance import pdist
+import numpy as np
+# from scipy.spatial import ckdtree
+
 def condensed_to_pair_indices(n,k):
     x = n-(4.*n**2-4*n-8*k+1)**.5/2-.5
     i = x.astype(int)
