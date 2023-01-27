@@ -32,6 +32,7 @@ def create_grid(params):
   my_x, my_y = create_grid_mesh(params)
   a1 = params['a1']
   a2 = params['a2']
+  bases = params['bases']
   #stack the mesh to (Nx, Ny, d=2) dim
   # print(my_x.shape)
   # my_grid = np.stack([my_x * a1 + my_y * a2], axis=-1)
@@ -39,8 +40,12 @@ def create_grid(params):
   # print(my_grid.shape)
 
   my_grid = einops.rearrange(my_grid, 'x y d -> (x y) d') #integer grid
+  BZ_grid = np.tensordot(my_grid[:, 0], a1, 0) + np.tensordot(my_grid[:, 1], a2, 0) # N points of 2d lattice vector
+  all_pts_grid = []
+  for basis in bases:
+    all_pts_grid.append(BZ_grid + basis)
+  return np.concatenate(all_pts_grid, 0)
 
-  return np.tensordot(my_grid[:, 0], a1, 0) + np.tensordot(my_grid[:, 1], a2, 0)
 
 def convert_to_XY(
     pts: Array)-> Tuple[Array]:
