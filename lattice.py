@@ -26,8 +26,15 @@ def create_grid_mesh(params):
 
   return X, Y
 
-def create_grid(params):
-
+def create_grid(params: dict) -> Array:
+  """Computes x, y coordinates of lattice specified by `params`.
+  
+  Args:
+    params: dictionary specifying lattice details.
+  
+  Returns:
+    [N, 2] array specifying x, y corodinates of N lattice points.
+  """
   #create a mesh
   my_x, my_y = create_grid_mesh(params)
   a1 = params['a1']
