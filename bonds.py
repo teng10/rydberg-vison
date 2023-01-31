@@ -1,3 +1,4 @@
+import dataclasses
 import numpy as np
 import einops
 import utils
@@ -5,13 +6,32 @@ import lattice
 from shapely import affinity
 from shapely.geometry.polygon import Polygon
 
+from typing import Any, Callable, Tuple, List
+Array = np.ndarray
+
+@dataclasses.dataclass
+class Bonds:
+  """Holds specification of the lattice.
+
+  Attributes:
+    a1: first principal lattice vector.
+    a2: second principal lattice vector. 
+    lattice_type: lattice geometry.
+    polygon: cut for the kagome lattice.
+    polygon_eb: list of polygons for small loops definition.
+    unit_cell_bases: locations of sites in the unit cell.
+    unit_cell_bases_ebs: locations of sites for the small loop.
+  """
+  polygon_ebs: List[Any]
+  unit_cell_bases_ebs: List[np.ndarray]
+
 def _find_all_bonds(pts, cut_off=1.1):
   # utility function to find all bonds given all points `pts`
   my_points = utils.close_pairs_pdist(pts, 1.1)
   bonds = pts[np.stack(my_points).T]
   return np.around(bonds, 2)
 
-def get_elementaryLoops(n_lattice_size, lattice_type, lattice_specs=None):
+def get_elementaryLoops(n_lattice_size, lattice_type, lattice_specs=None, ebSpecs=None):
   nx, ny = n_lattice_size
 
   if lattice_specs != None:
@@ -20,23 +40,20 @@ def get_elementaryLoops(n_lattice_size, lattice_type, lattice_specs=None):
       # Redefine the polygon for boundary conditions
       height = np.sqrt(3)/2
       epsilon = 0.01 # to shift the boundary of the polygon slightly so that the region counts correct points within the boundary
-      # polygon = Polygon([(int((nx-1)/2) - epsilon, 0 - epsilon), 
-      #                   ((nx-1) + epsilon, 0 - epsilon), 
-      #                   (int((nx-1)/2)/2 + (nx-1) - 1 - epsilon, int((nx-1)/2) * height - epsilon), 
-      #                   ((nx-1)/2 + int((nx-1)/2) - 1 - epsilon, (nx-1) * height - epsilon), 
-      #                   ((nx-1)/2 - epsilon, (nx-1) * height + epsilon), 
-      #                   (int((nx-1)/2)/2  - epsilon, int((nx-1)/2) * height + epsilon)])
-      polygon = lattice_specs.polygon
-      polygon = lattice_specs.polygon_ebs[0]
-      grid_params_eb0 = {'x1':0, 'x2':nx-1, 'y1':0, 'y2':ny-1, 'Nx':nx-1, 'Ny':ny-1, 
+      
+      grid_params_eb0 = {'x1':0, 'x2':nx, 'y1':0, 'y2':ny, 'Nx':nx, 'Ny':ny, 
       'a1':lattice_specs.a1, 'a2':lattice_specs.a2, 
-      # 'O':(0., 2./3. * np.sqrt(3)/2), # at the top of top triangle
-      'O':(0., 1.), # at the top of top triangle
-      'unit_cell_bases':[np.array([0, height])]}
-      points_eb0 = list(lattice.create_grid(grid_params_eb0))
-      points_eb0 = lattice.get_contained_pts_poly(points_eb0, polygon)
-      ListEBs0 = [elemetntaryLoop(0, p, lattice_specs) for p in points_eb0]
-      return [ListEBs0, ]
+      'O':(0., 0.), # shifting the whole position of the origin so that the loop does not start below 0-axis
+      'unit_cell_bases':[np.array([0, height])]} # at the top of top triangle
+      ListEB_comb = []
+      for i in range(6):
+        grid_params_eb0['unit_cell_bases'] = [ebSpecs.unit_cell_bases_ebs[i]] # reset the basis vector for each
+        polygon = ebSpecs.polygon_ebs[i]
+        points_eb0 = list(lattice.create_grid(grid_params_eb0))
+        points_eb0 = lattice.get_contained_pts_poly(points_eb0, polygon)
+        ListEBs0 = [elemetntaryLoop(i, p, lattice_specs) for p in points_eb0]
+        ListEB_comb.append(ListEBs0)
+      return ListEB_comb
 
   elif lattice_type == 'triangular':
     #create all elementry bonds
@@ -109,10 +126,114 @@ def elemetntaryLoop(type, anchor, lattice_specs=None):
         ])
         bd_ps = np.mean(bd_vs, axis=1, keepdims=False)
         bd_signs = np.array([
-            -1, -1, -1, -1, 1, 1, 1
-            # [1], [1], [-1], [-1]
+            -1, -1, -1, -1, 1, 1, 1 # signs of the bond given the orientation
             ]
         )
+      if type == 1:
+        # anchor is at the tip of the triangle
+        t1 = anchor + np.array([-1./2., -1 / 3 * height])
+        h = anchor + np.array([-1.5, - height])
+        bd_vs = anchor + np.array([
+            [[0, 0], [-1/2, - height]],
+            [[-1/2, - height], [-1, -2 * height]],
+            [[-1, -2 * height], [-2, - 2 * height]], 
+            [[-2, - 2 * height], [-2.5, - 1 * height]],
+            [[-2.5, - 1 * height], [-2., 0.]],
+            [[-2., 0.], [-1., 0.]],
+            [[-1., 0.], [0., 0.]],
+        ])      # boundary vertices
+        mid_vs = anchor + np.array([
+            [[-1., 0.], [-1/2, -height]]
+        ])
+        bd_ps = np.mean(bd_vs, axis=1, keepdims=False)
+        bd_signs = np.array([
+            -1, -1, -1, -1, 1, 1, 1 
+            ]
+        )       
+      if type == 2:
+        # anchor is at the tip of the triangle
+        t1 = anchor + np.array([-0.5, 1 / 3 * height])
+        h = anchor + np.array([-1.5,  height])
+        bd_vs = anchor + np.array([
+            [[0, 0], [-1., 0.]],
+            [[-1., 0.], [-2, 0.]],
+            [[-2., 0.], [-2.5, height]], 
+            [[-2.5, height], [-2., 2 * height]],
+            [[-2., 2 * height], [-1., 2 * height]],
+            [[-1., 2 * height], [-0.5, height]],
+            [[-0.5, height], [0., 0.]],
+        ])      # boundary vertices
+        mid_vs = anchor + np.array([
+            [[-1., 0.], [-0.5, height]]
+        ])
+        bd_ps = np.mean(bd_vs, axis=1, keepdims=False)
+        bd_signs = np.array([
+            -1, -1, 1, 1, 1, -1, -1 
+            ]
+        )             
+      if type == 3:
+        # anchor is at the tip of the triangle
+        t1 = anchor + np.array([0., 2 / 3 * height])
+        h = anchor + np.array([0., 2 * height])
+        bd_vs = anchor + np.array([
+            [[0, 0], [-0.5, height]],
+            [[-0.5, height], [-1., 2 * height]],
+            [[-1., 2 * height], [-0.5, 3 * height]], 
+            [[-0.5, 3 * height], [0.5, 3 * height]],
+            [[0.5, 3 * height], [1., 2 * height]],
+            [[1., 2 * height], [0.5, height]],
+            [[0.5, height], [0., 0.]],
+        ])      # boundary vertices
+        mid_vs = anchor + np.array([
+            [[-0.5, height], [0.5, height]]
+        ])
+        bd_ps = np.mean(bd_vs, axis=1, keepdims=False)
+        bd_signs = np.array([
+            1, 1, 1, 1, -1, -1, -1 
+            ]
+        )        
+      if type == 4:
+        # anchor is at the tip of the triangle
+        t1 = anchor + np.array([0.5, 1 / 3 * height])
+        h = anchor + np.array([1.5,  height])
+        bd_vs = anchor + np.array([
+            [[0, 0], [0.5, height]],
+            [[0.5, height], [1., 2 * height]],
+            [[1., 2 * height], [2., 2 * height]], 
+            [[2., 2 * height], [2.5,  height]],
+            [[2.5,  height], [2., 0.]],
+            [[2., 0.], [1., 0.]],
+            [[1., 0.], [0., 0.]],
+        ])      # boundary vertices
+        mid_vs = anchor + np.array([
+            [[0.5, height], [1., 0.]]
+        ])
+        bd_ps = np.mean(bd_vs, axis=1, keepdims=False)
+        bd_signs = np.array([
+            1, 1, 1, -1, -1, -1, -1 
+            ]
+        )                            
+      if type == 5:
+        # anchor is at the tip of the triangle
+        t1 = anchor + np.array([0.5, -1 / 3 * height])
+        h = anchor + np.array([1.5,  -height])
+        bd_vs = anchor + np.array([
+            [[0, 0], [1., 0.]],
+            [[1., 0.], [2., 0.]],
+            [[2., 0.], [2.5, - height]], 
+            [[2.5, - height], [2., -2 * height]],
+            [[2., -2 * height], [1., -2 * height]],
+            [[1., -2 * height], [0.5, - height]],
+            [[0.5, - height], [0., 0.]],
+        ])      # boundary vertices
+        mid_vs = anchor + np.array([
+            [[0.5, - height], [1., 0.]]
+        ])
+        bd_ps = np.mean(bd_vs, axis=1, keepdims=False)
+        bd_signs = np.array([
+            1, 1, -1, -1, -1, 1, 1 
+            ]
+        )                 
       return {"triangles":np.array([t1, h]), "bd_vs": np.around(bd_vs, 2), "mid_vs": np.around(mid_vs, 2), "bs_ps":np.around(bd_ps, 2), "bd_signs":bd_signs}
   
   height = np.sqrt(3)/2

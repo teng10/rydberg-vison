@@ -19,14 +19,12 @@ class Lattice:
     a2: second principal lattice vector. 
     lattice_type: lattice geometry.
     polygon: cut for the kagome lattice.
-    polygon_eb: list of polygons for small loops definition.
     unit_cell_bases: locations of sites in the unit cell.
   """
   a1: np.ndarray
   a2: np.ndarray
   lattice_type: str
   polygon: Any
-  polygon_ebs: List[Any]
   unit_cell_bases: List[np.ndarray]
 
 def create_grid_mesh(params):
