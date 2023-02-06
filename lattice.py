@@ -86,6 +86,13 @@ def get_contained_pts_poly(
     poly: Any)-> Array:
   '''
   Util function getting points contained in `polygon` from an array of points `pts`.
+
+  Args:
+    pts: an array of points.
+    poly: a polygon from shapely. 
+  
+  Returns:
+    An array of points that are contained in `poly`.
   '''
   pts_cut = []
   # check if points live in the polygon region
@@ -95,6 +102,51 @@ def get_contained_pts_poly(
     if poly.contains(poly_pt):
       pts_cut.append(pt)
   return np.stack(pts_cut, 0)
+
+def is_eb_contained(
+    eb_vs: Array, 
+    poly: Any)-> bool:
+  '''
+  Util function to determine if an elementary loop `eb_vs` is contained in polygon `poly`.
+
+  Args:
+    eb_vs: [N, 2, 2] array of N loops, each with two vertices indexed in the 1st dimension [:, i, :].
+    poly: a polygon from shapely. 
+  
+  Returns:
+    A boolean constant for whether the `eb` are contained in `poly`.
+  '''
+  
+  # check if points live in the polygon region
+  for i, bond in enumerate(list(eb_vs)):  # loops through all the bonds in the `eb_vs`
+    for pt in list(bond):
+      poly_pt = shapely.Point(pt)
+      if not poly.contains(poly_pt):
+        return False
+  return True
+
+def get_contained_els_poly(
+    els: List[dict], 
+    poly: Any, 
+    key = "bd_vs")-> List[dict]:
+  '''
+  Util function getting all  contained in `polygon` from an array of points `pts`.
+
+  Args:
+    els: a list of elementary loops.
+    poly: a polygon from shapely. 
+    key: key for accessing the vertices [array] of the `els`. 
+  
+  Returns:
+    A list of loops that are contained in `poly`.
+  '''
+  els_contained = []
+  # check if the loops live in the polygon region
+  for i, el in enumerate(list(els)):
+    eb_vs = el[key]
+    if is_eb_contained(eb_vs, poly):
+      els_contained.append(el)
+  return els_contained
 
 def create_hexagon(l, x, y):
     """
