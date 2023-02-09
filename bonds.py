@@ -43,6 +43,100 @@ def _find_all_bonds(pts, cut_off=1.1):
   bonds = pts[np.stack(my_points).T]
   return np.around(bonds, 2)
 
+def elemetntaryLoopBowTie(type, anchor, lattice_specs=None):
+  """
+  Generate coordinates for a pair of triangles (t1, t2), boundary bonds coordinates, and middle bond coordinates.
+  `type` is the type of the elementry loop, `anchor` is an array, the coordinate of a chosen vertex
+  """
+  anchor = np.array(anchor)
+  if lattice_specs != None: 
+    if lattice_specs.lattice_type == 'kagome':
+      height = np.sqrt(3)/2
+      if type == 0:
+        # anchor at the top of the triangle
+        t1 = anchor + np.array([0., -2 / 3 * np.sqrt(3)/2])
+        t2 = anchor + np.array([1., -4 / 3 * np.sqrt(3)/2])
+        # h = anchor + np.array([0., - 2 * np.sqrt(3)/2])
+        bd_vs = anchor + np.array([
+            [[0, 0], [1/2, - height]],
+            [[1/2, - height], [1, -2 * height]],
+            [[1, -2 * height], [3/2, - height]], 
+            [[3/2, - height], [1/2, - height]],
+            [[1/2, - height], [-1/2, - height]],
+            [[-1/2, - height],  [0, 0]],
+        ])      # boundary vertices
+        mid_vs = anchor + np.array([
+            [[-1/2, - height], [1/2, -height]]
+        ])
+        bd_ps = np.mean(bd_vs, axis=1, keepdims=False)
+        bd_signs = np.array([
+            -1, -1, 1, -1, -1, 1 # signs of the bond given the orientation
+            ]
+        )
+      if type == 1:
+        # anchor is at the tip of the triangle
+        t1 = anchor + np.array([-1./2., -1 / 3 * height])
+        t2 = anchor + np.array([-1./2., -5 / 3 * height])
+        # h = anchor + np.array([-1.5, - height])
+        bd_vs = anchor + np.array([
+            [[0, 0], [-1/2, - height]],
+            [[-1/2, - height], [-1, -2 * height]],
+            [[-1, - 2 * height], [0, -2 * height]],
+            [[0, -2 * height], [-0.5, - height]], 
+            [[-0.5, - height], [-1, 0]],
+            [[-1, 0], [0., 0.]]
+        ])      # boundary vertices
+        mid_vs = anchor + np.array([
+            [[-1., 0.], [-1/2, -height]]
+        ])
+        bd_ps = np.mean(bd_vs, axis=1, keepdims=False)
+        bd_signs = np.array([
+            -1, -1, 1, 1, 1, 1 
+            ]
+        )       
+      if type == 2:
+        # anchor is at the tip of the triangle
+        t1 = anchor + np.array([-0.5, 1 / 3 * height])
+        t2 = anchor + np.array([-1.5, -1 / 3 * height])
+        bd_vs = anchor + np.array([
+            [[0, 0], [-1., 0.]],
+            [[-1., 0.], [-2, 0.]],
+            [[-2., 0.], [-1.5, - height]], 
+            [[-1.5, - height], [-1., 0.]],
+            [[-1., 0.], [-0.5, height]],
+            [[-0.5, height], [0., 0.]],
+        ])      # boundary vertices
+        mid_vs = anchor + np.array([
+            [[-1., 0.], [-0.5, height]]
+        ])
+        bd_ps = np.mean(bd_vs, axis=1, keepdims=False)
+        bd_signs = np.array([
+            -1, -1, -1, 1, 1, -1 
+            ]
+        )      
+      if type == 3:
+        # type 3 is a hexagon geometry
+        # anchor is at the upper right corner of the hexagon
+        t1 = anchor + np.array([-0.5, - height])
+        t2 = anchor + np.array([-0.5, - height])
+        bd_vs = anchor + np.array([
+            [[0, 0], [0.5, - height]],
+            [[0.5, - height], [0., -2 * height]],
+            [[0., -2 * height], [-1., - 2 * height]], 
+            [[-1., - 2 * height], [-1.5, - height]],
+            [[-1.5, - height], [-1., 0.]],
+            [[-1., 0.], [0., 0.]],
+        ])      # boundary vertices
+        mid_vs = anchor + np.array([
+            [[-1., 0.], [-0.5, height]]
+        ])
+        bd_ps = np.mean(bd_vs, axis=1, keepdims=False)
+        bd_signs = np.array([
+            -1, -1, -1, 1, 1, 1 
+            ]
+        )      
+      return {"triangles":np.array([t1, t2]), "bd_vs": np.around(bd_vs, 2), "mid_vs": np.around(mid_vs, 2), "bs_ps":np.around(bd_ps, 2), "bd_signs":bd_signs}
+  
 def get_elementaryLoops(n_lattice_size, lattice_type, lattice_specs=None, ebSpecs=None, elemetntaryLoopfn=elemetntaryLoopBowTie):
   nx, ny = n_lattice_size
 
@@ -114,83 +208,7 @@ def get_elementaryLoops(n_lattice_size, lattice_type, lattice_specs=None, ebSpec
     return ListEB_comb
     # return sum(ListEB_comb, [])
 
-def elemetntaryLoopBowTie(type, anchor, lattice_specs=None):
-  """
-  Generate coordinates for a pair of triangles (t1, t2), boundary bonds coordinates, and middle bond coordinates.
-  `type` is the type of the elementry loop, `anchor` is an array, the coordinate of a chosen vertex
-  """
-  anchor = np.array(anchor)
-  if lattice_specs != None: 
-    if lattice_specs.lattice_type == 'kagome':
-      height = np.sqrt(3)/2
-      if type == 0:
-        # anchor at the top of the triangle
-        t1 = anchor + np.array([0., -2 / 3 * np.sqrt(3)/2])
-        h = anchor + np.array([0., - 2 * np.sqrt(3)/2])
-        bd_vs = anchor + np.array([
-            [[0, 0], [1/2, - height]],
-            [[1/2, - height], [3/2, - height]],
-            [[3/2, - height], [1, -2 * height]],
-            [[1, -2 * height], [1/2, - 3 * height]], 
-            [[1/2, - 3 * height], [-1/2, - 3 * height]],
-            [[-1/2, - 3 * height], [-1, - 2 * height]],
-            [[-1, - 2 * height], [-1/2, - height]],
-            [[-1/2, - height], [0, 0]],
-        ])      # boundary vertices
-        mid_vs = anchor + np.array([
-            [[-1/2, - height], [1/2, -height]]
-        ])
-        bd_ps = np.mean(bd_vs, axis=1, keepdims=False)
-        bd_signs = np.array([
-            -1, 1, -1, -1, -1, 1, 1, 1 # signs of the bond given the orientation
-            ]
-        )
-      if type == 1:
-        # anchor is at the tip of the triangle
-        t1 = anchor + np.array([-1./2., -1 / 3 * height])
-        h = anchor + np.array([-1.5, - height])
-        bd_vs = anchor + np.array([
-            [[0, 0], [-1/2, - height]],
-            [[-1/2, - height], [0, -2 * height]],
-            [[0, - 2 * height], [-1, -2 * height]],
-            [[-1, -2 * height], [-2, - 2 * height]], 
-            [[-2, - 2 * height], [-2.5, - 1 * height]],
-            [[-2.5, - 1 * height], [-2., 0.]],
-            [[-2., 0.], [-1., 0.]],
-            [[-1., 0.], [0., 0.]],
-        ])      # boundary vertices
-        mid_vs = anchor + np.array([
-            [[-1., 0.], [-1/2, -height]]
-        ])
-        bd_ps = np.mean(bd_vs, axis=1, keepdims=False)
-        bd_signs = np.array([
-            -1, -1, -1, -1, 1, 1, 1, 1 
-            ]
-        )       
-      if type == 2:
-        # anchor is at the tip of the triangle
-        t1 = anchor + np.array([-0.5, 1 / 3 * height])
-        h = anchor + np.array([-1.5,  height])
-        bd_vs = anchor + np.array([
-            [[0, 0], [-1., 0.]],
-            [[-1., 0.], [-3/2, - height]],
-            [[-3/2, - height], [-2, 0.]],
-            [[-2., 0.], [-2.5, height]], 
-            [[-2.5, height], [-2., 2 * height]],
-            [[-2., 2 * height], [-1., 2 * height]],
-            [[-1., 2 * height], [-0.5, height]],
-            [[-0.5, height], [0., 0.]],
-        ])      # boundary vertices
-        mid_vs = anchor + np.array([
-            [[-1., 0.], [-0.5, height]]
-        ])
-        bd_ps = np.mean(bd_vs, axis=1, keepdims=False)
-        bd_signs = np.array([
-            -1, -1, 1, 1, 1, 1, -1, -1 
-            ]
-        )      
-      return {"triangles":np.array([t1, h]), "bd_vs": np.around(bd_vs, 2), "mid_vs": np.around(mid_vs, 2), "bs_ps":np.around(bd_ps, 2), "bd_signs":bd_signs}
-  
+
 def elemetntaryLoop(type, anchor, lattice_specs=None, loop_length=8):
   """
   Generate coordinates for a pair of triangles (t1, t2), boundary bonds coordinates, and middle bond coordinates.
