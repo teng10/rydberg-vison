@@ -1,3 +1,6 @@
+import numpy as np
+from scipy.spatial.distance import pdist
+
 def condensed_to_pair_indices(n,k):
     x = n-(4.*n**2-4*n-8*k+1)**.5/2-.5
     i = x.astype(int)
@@ -15,8 +18,8 @@ def build_dict_bonds(bonds):
   length = bonds.shape[0]
   keys = list(bonds)
   keys2 = list(bonds2)
-  dict_bonds = {(keys[i]).tobytes(): i for i in np.arange(length).astype(int)}
-  dict_bonds2 = {(keys2[i]).tobytes(): i for i in np.arange(length).astype(int)}
+  dict_bonds = {str(keys[i]): i for i in np.arange(length).astype(int)}
+  dict_bonds2 = {str(keys2[i]): i for i in np.arange(length).astype(int)}
   return {**dict_bonds, **dict_bonds2}
 
 def get_energy(couplings, Q, Q0, loops, bonds_dict):
@@ -30,7 +33,7 @@ def get_energy(couplings, Q, Q0, loops, bonds_dict):
     bd_signs = l["bd_signs"]
     bd_vs = np.around(bd_vs, 2)
     
-    indices = np.array([bonds_dict[bd_v.tobytes()] for bd_v in bd_vs])
+    indices = np.array([bonds_dict[str(bd_v)] for bd_v in bd_vs])
     Qs_loop = np.take_along_axis(Qs, indices, 0)
     # signs_loop = np.take_along_axis(bd_signs, indices, 0)
     Qs_loops_vals.append(np.prod(Qs_loop * bd_signs))
