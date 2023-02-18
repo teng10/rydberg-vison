@@ -37,12 +37,40 @@ class Bonds:
   polygon_ebs: List[Any]
   unit_cell_bases_ebs: List[np.ndarray]
 
-def _find_all_bonds(pts, cut_off=1.1):
+def _find_all_bonds(pts, max_d=1.1, min_d=0.0):
+  '''
+  Find all bonds given all points `pts` within a cut-off distance `max_d`.
+  Args:
+    pts: array of shape [N, 2] for all points.
+    max_d: float, cut-off distance.
+  Returns:
+    bonds: array of shape [M, k, 2] which indicate M sets of bonds.
+  '''
   # utility function to find all bonds given all points `pts`
-  my_points = utils.close_pairs_pdist(pts, 1.1)
-  bonds = pts[np.stack(my_points).T]
+  my_points = utils.close_pairs_pdist(pts, max_d, min_d) # indices of all bonds
+  bonds = pts[my_points]
   return np.around(bonds, 2)
 
+def _get_ryd_bonds(
+  bonds: np.ndarray, 
+  distances: List):
+  """
+  Utility function to find all bonds for the Rydberg blockade constraint within a cut-off distance `max_d`.
+  Args:
+    bonds: array of shape [N, 2] for all points.
+    distances: list of k-pair distances for the Rydberg blockade constraint.
+  Returns:
+    bonds: array of shape [k, M] which indicate indices for M sets of bonds.
+  """
+  # first compute the middle point of each bond
+  mids = np.mean(bonds, axis=1)
+  # build blockades for each bond
+  blockades = []
+  for _, (d_max, d_min) in enumerate(distances):
+    blockades.append(utils.close_pairs_pdist(mids, d_max, d_min)) # indices of all bonds within the cut-off distance
+  # return np.stack(blockades, axis=0) # [k, M]
+  return blockades # list of [M] arrays
+  
 def elemetntaryLoopBowTie(type, anchor, lattice_specs=None):
   """
   Generate coordinates for a pair of triangles (t1, t2), boundary bonds coordinates, and middle bond coordinates.

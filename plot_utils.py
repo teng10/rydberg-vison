@@ -3,7 +3,10 @@ def _plot_v_bonds(ax, v_pairs, c='b'):
   # helper function for plotting pairs of bonds
   for i, v_pair in enumerate(v_pairs):
     if isinstance(c, np.ndarray):
-      ax.plot(v_pair[:, 0], v_pair[:, 1], color=c[i, :])
+      if c.ndim == 2:
+        ax.plot(v_pair[:, 0], v_pair[:, 1], color=c[i, :])
+      if c.ndim == 1:
+        ax.plot(v_pair[:, 0], v_pair[:, 1], color=c)
     else:
       ax.plot(v_pair[:, 0], v_pair[:, 1], color=c)
 
