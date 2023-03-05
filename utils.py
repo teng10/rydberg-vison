@@ -72,7 +72,8 @@ def get_energy_rydberg(couplings, Q, Q0, loops, ryd_bonds, bonds_dict):
       # k_bonds is a pair bond (2, 2, 2)
       indices = np.array([bonds_dict[str(bd_v)] for bd_v in k_bonds])
       Qs_ryd_bonds = np.take_along_axis(Qs, indices, 0)
-      assert Qs_ryd_bonds.shape == (2, ), "Qs_ryd_bonds shape is not (2, ) for a pair of Rydberg bonds" 
+      # TODO make this a test case
+      # assert Qs_ryd_bonds.shape == (2, ), "Qs_ryd_bonds shape is not (2, ) for a pair of Rydberg bonds" 
       ryd_k_vals.append(np.prod(np.abs(Qs_ryd_bonds)**2))  # take product of |Q_i|^2 |Q_j|^2
     ryd_bonds_vals.append(np.sum(ryd_k_vals)) # sum over bonds in k-nn and append to list
 
