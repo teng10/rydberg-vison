@@ -20,8 +20,12 @@ class KagomeLatticeTests(parameterized.TestCase):
     self.unit_cell_points = np.stack([
       np.array([0.5, 0]), np.array([-0.5, 0.]), np.array([0., np.sqrt(3) / 2.])
       ]
-    )
+    ) 
+    self.unit_cell = lattices.Lattice(self.unit_cell_points)
     self.nx, self.ny = 8, 8
+    self.expanded_lattice = self.unit_cell.get_expanded_lattice(
+        self.nx, self.ny, self.a1, self.a2
+    )
 
   def test_kagome_lattice(self):  #TODO(YT): move all plotting to colab.
     """Test plotting the kagome lattice."""
@@ -31,8 +35,8 @@ class KagomeLatticeTests(parameterized.TestCase):
           points=np.array([
           [ 0.5  ,  0.   ],
           [-0.5  ,  0.   ],
-          [ 0.   ,  0.866]]),
-      )
+          [ 0.   ,  np.sqrt(3) / 2.]]),
+      )   
       self.assertTrue(unit_cell == expected_cell)
       fig, ax = plt.subplots(1, 1)
       plotting_utils.plot_lattice(unit_cell, ax, annotate=True)
@@ -42,6 +46,9 @@ class KagomeLatticeTests(parameterized.TestCase):
       expanded_lattice = sum(
           unit_cell.shift(self.a1 * i + self.a2 * j)
           for i, j in itertools.product(range(self.nx), range(self.ny))
+      )
+      np.testing.assert_allclose(
+          self.expanded_lattice.points, expanded_lattice.points
       )
       fig, ax = plt.subplots(1, 1)
       plotting_utils.plot_lattice(expanded_lattice, ax, annotate=True)
@@ -63,6 +70,16 @@ class KagomeLatticeTests(parameterized.TestCase):
     np.testing.assert_allclose(
         np.array([1]),
         np.squeeze(unit_cell.get_idx([unit_cell.get_point([1])]))
+    )
+  
+  @parameterized.parameters(2, 3, 4, 5, 6, 7)
+  def test_shifted_coordinate(self, shift):
+    """Tests that the shifted point is numerically precise."""
+    test_point  = self.unit_cell.points[2]
+    test_point_shifted = test_point + self.a2 * shift
+    unit_cell_shifted = self.unit_cell.shift(self.a2 * shift)
+    np.testing.assert_allclose(
+        test_point_shifted, unit_cell_shifted.points[2]
     )
 
 if __name__ == "__main__":
