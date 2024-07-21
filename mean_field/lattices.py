@@ -108,6 +108,144 @@ class Lattice:
             and np.array_equal(self.points, other.points))
 
 
+class KagomeLattice(Lattice):
+  def __init__(
+      self,
+      a: float = 1.0,
+  ):
+    """Kagome lattice of lattice constant `a`."""
+    unit_cell_points = a * np.array([
+        [0.25, 0], [-0.25, 0.], [0., np.sqrt(3) / 4.]
+        ]
+    ) 
+    self.unit_cell = Lattice(unit_cell_points)
+    self.a1 = a * np.array([1.0, 0.0])
+    self.a2 = a * np.array([1. / 2., np.sqrt(3.0) / 2.])
+    self.height = np.sqrt(3) / 4.  # height of the unit cell
+    self.points = unit_cell_points
+
+  def get_expanded_lattice(
+      self,
+      size_x: int,
+      size_y: int,        
+  ) -> Lattice:
+    """Returns a lattice of size `size_x` x `size_y`."""
+    expanded_lattice = sum(
+        self.unit_cell.shift(self.a1 * i + self.a2 * j)
+        for i, j in itertools.product(range(size_x), range(size_y))
+    )
+    return expanded_lattice
+  
+
+class EnlargedDiceLattice(Lattice):
+  def __init__(
+      self,
+      a: float = 1.0,
+  ):
+    """Kagome lattice of lattice constant `a`."""
+    self.delta1 = a * np.array([np.sqrt(3) / 2., 1. / 2.])
+    self.delta2 = a * np.array([-np.sqrt(3) / 2., 1. / 2.])
+    self.delta3 = a * np.array([0.0, -1.0])
+    unit_cell_points = np.array([
+        np.array([0.0, 0.0]),
+        self.delta1, 
+        self.delta3, 
+        2. * self.delta1,
+        self.delta1 + self.delta3,
+        self.delta1 - self.delta2,
+        self.delta3 - self.delta2,
+        2. * self.delta1 - self.delta2,
+        self.delta1 + self.delta3 - self.delta2, 
+        2. * self.delta1 + self.delta3 - self.delta2, 
+        self.delta1 + 2. * self.delta3 - self.delta2, 
+        self.delta1 + self.delta3 - 2. * self.delta2, 
+    ])
+    self.sublattice = len(unit_cell_points)
+    self.unit_cell = Lattice(unit_cell_points)
+    self.a1 = a * np.array([2 * np.sqrt(3), 0.0])
+    self.a2 = a * np.array([np.sqrt(3), 3.0])
+    # self.height = np.sqrt(3) / 4.  # height of the unit cell
+    self.points = unit_cell_points
+
+  def get_expanded_lattice(
+      self,
+      size_x: int,
+      size_y: int,        
+  ) -> Lattice:
+    """Returns a lattice of size `size_x` x `size_y`."""
+    expanded_lattice = sum(
+        self.unit_cell.shift(self.a1 * i + self.a2 * j)
+        for i, j in itertools.product(range(size_x), range(size_y))
+    )
+    return expanded_lattice
+
+  def eta(self):
+    """Definition of sublattice frustrated bond values."""
+    eta_mat = np.zeros((self.sublattice, self.sublattice))
+    # alpha = 2
+    eta_mat[1, 0] = 1.
+    eta_mat[1, 3] = 1.
+    eta_mat[1, 4] = 1.
+    eta_mat[1, 5] = -1.
+    eta_mat[1, 10] = -1.
+    eta_mat[1, 11] = 1.
+    # alpha = 3
+    eta_mat[2, 0] = 1.
+    eta_mat[2, 3] = 1.
+    eta_mat[2, 4] = -1.
+    eta_mat[2, 6] = 1.
+    eta_mat[2, 9] = 1.
+    eta_mat[2, 11] = -1.
+    # alpha = 8
+    eta_mat[7, 0] = 1.
+    eta_mat[7, 3] = 1.
+    eta_mat[7, 5] = 1.
+    eta_mat[7, 6] = -1.
+    eta_mat[7, 9] = -1.
+    eta_mat[7, 10] = 1.
+    # alpha = 9
+    eta_mat[8, 4] = 1.
+    eta_mat[8, 5] = 1.
+    eta_mat[8, 6] = 1.
+    eta_mat[8, 9] = 1.
+    eta_mat[8, 10] = 1.
+    eta_mat[8, 11] = 1.
+    return eta_mat
+
+  def delta(self):
+    """Definition of sublattice displacement tensor."""
+    delta_tensor = np.zeros((self.sublattice, self.sublattice, 2))
+    # alpha = 2
+    delta_tensor[1, 0] = - self.delta1
+    delta_tensor[1, 3] = self.delta1
+    delta_tensor[1, 4] = self.delta3
+    delta_tensor[1, 5] = - self.delta2
+    delta_tensor[1, 10] = self.delta2
+    delta_tensor[1, 11] = - self.delta3
+    # alpha = 3
+    delta_tensor[2, 0] = - self.delta3
+    delta_tensor[2, 3] = self.delta3
+    delta_tensor[2, 4] = self.delta1
+    delta_tensor[2, 6] = - self.delta2
+    delta_tensor[2, 9] = self.delta2
+    delta_tensor[2, 11] = - self.delta1
+    # alpha = 8
+    delta_tensor[7, 0] = - self.delta2
+    delta_tensor[7, 3] = self.delta2
+    delta_tensor[7, 5] = -self.delta1
+    delta_tensor[7, 6] = - self.delta3
+    delta_tensor[7, 9] = self.delta3
+    delta_tensor[7, 10] = self.delta1
+    # alpha = 9
+    delta_tensor[8, 4] = self.delta2
+    delta_tensor[8, 5] = - self.delta3
+    delta_tensor[8, 6] = - self.delta1
+    delta_tensor[8, 9] = self.delta1
+    delta_tensor[8, 10] = self.delta3
+    delta_tensor[8, 11] = - self.delta2
+    return delta_tensor
+
+
 def get_restricted(
     lattice: Lattice,
     polygon: shapely.geometry.Polygon,
