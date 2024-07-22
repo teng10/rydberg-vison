@@ -1,9 +1,17 @@
 """Computations of the dynamical structure factor."""
 from __future__ import annotations
+import functools
+import tqdm
+from typing import Tuple
 
 import abc
 import numpy as np
+import jax
 import jax.numpy as jnp
+
+from mean_field.lattices import Lattice
+from mean_field.reciprocal_lattices import ReciprocalDiceLattice
+from mean_field.hamiltonian import Hamiltonian
 
 
 class DynamicalStructureFactor(abc.ABC):
@@ -165,3 +173,93 @@ class DynamicalStructureFactor(abc.ABC):
       )
       structure_factor_qs.append(first_term + second_term)
     return jnp.array(structure_factor_qs)
+
+
+  def get_ingredients(self, q_vector: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Computes the ingredients for the structure factor.
+    
+    Ingredients are the partial contractions of the structure factor,
+    and the eigenvalues of the Hamiltonian for the k and q - k points.
+
+    Args:
+      q_vector: The momentum transfer.
+    
+    Returns:
+      The ingredients for the structure factor.
+    """
+    spectrum_qmk = self.hamiltonian.get_eignenvalue_spectra(
+        -(self.kpoints - q_vector)
+    )
+    spectrum_kmq = self.hamiltonian.get_eignenvalue_spectra(
+      self.kpoints - q_vector
+    )
+    eigvals_k = self.spectrum_k.evals
+    eigvals_qmk = spectrum_qmk.evals
+
+    eigvecs_k = self.spectrum_k.evecs
+    eigvecs_qmk = spectrum_qmk.evecs
+    eigvecs_kmq = spectrum_kmq.evecs
+    eigvecs_mk = self.spectrum_mk.evecs
+
+    momentum_q = self.momentum_factor_matrix(q_vector, 1)
+    momentum_mq = self.momentum_factor_matrix(q_vector, -1)
+
+    eigvec_k = self._compute_eigenvector_matrix_elements(eigvecs_k, eigvecs_mk)
+    eigvec_qk = self._compute_eigenvector_matrix_elements(eigvecs_qmk, eigvecs_kmq)
+
+    first_partial_contraction = np.einsum(
+        'ab, gd, pab, pgd, pagm, pdbn -> pmn',
+        self.eta, self.eta,
+        momentum_q, momentum_mq, eigvec_k, eigvec_qk, 
+        optimize=True,
+    )
+    second_partial_contraction = np.einsum(
+        'ab, gd, pab, pgd, padm, pbgn -> pmn',
+        self.eta, self.eta,
+        momentum_q, momentum_mq, eigvec_k, eigvec_qk, 
+        optimize=True,
+    )
+    return (
+        first_partial_contraction, second_partial_contraction,
+        eigvals_k, eigvals_qmk
+    )
+    
+  def calculate_from_ingredients(
+      self,
+      omega: float,
+      ingredients: Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray],
+  )-> float:
+    """Computes the structure factor from precomputed partial contractions.
+    
+    Args:
+      omega: The frequency.
+      ingredients: The ingredients for the structure factor.
+
+    Returns:
+      The structure factor.  
+    """
+    first_ingredient, second_ingredient, eigvals_k, eigvals_qmk = ingredients
+    freq_mat = self._frequency_factor(omega, eigvals_k, eigvals_qmk)
+    return 1. / len(first_ingredient) * jnp.einsum(
+        'pmn, pmn -> ',
+        first_ingredient + second_ingredient, freq_mat
+    )
+      
+  def structure_factor_partially_contracted(
+        self, 
+        q_vectors: np.ndarray, 
+        omegas: np.ndarray
+    )-> jnp.ndarray:
+    """Compute structure factor for a single q and all omegas."""
+
+    sf_all_qs = []
+    for q_vector in tqdm.tqdm(q_vectors):
+      sf_q_partial_contraction_fn = functools.partial(
+          self.calculate_from_ingredients,
+          ingredients=self.get_ingredients(q_vector)
+      )
+      sf_q_vmap = jax.vmap(sf_q_partial_contraction_fn)
+      sf_q_vmap_jitted = jax.jit(sf_q_vmap)
+      sf_all_qs.append(sf_q_vmap_jitted(omegas))
+    return jnp.stack(sf_all_qs) 
