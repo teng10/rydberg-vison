@@ -137,6 +137,50 @@ class KagomeLattice(Lattice):
     return expanded_lattice
   
 
+class DiceLattice(Lattice):
+  def __init__(
+      self,
+      a: float = 1.0,
+  ):
+    """Kagome lattice of lattice constant `a`."""
+    # self.a1 = np.array([2 * a * rho * np.sqrt(3) / 8. + a / 4., 0.0])
+    # self.a2 = np.array([
+    #     a * rho * np.sqrt(3) / 8. + a / 8., 
+    #     a * rho * 1. / 8. + a * np.sqrt(3) / 8. + a * rho / 4.
+    # ])
+    # unit_cell_points = 1. / 4. * np.array([
+    #     [a, a / np.sqrt(3.)], 
+    #     [a, a / 2. * np.sqrt(3.) + a * rho + a / (2. * np.sqrt(3.))],
+    #     [a + 4. * self.a2[0], a / 2 * np.sqrt(3.) + a * rho / 2.]
+    # ])
+    self.delta1 = a * np.array([np.sqrt(3) / 2., 1. / 2.]) 
+    self.delta2 = a * np.array([-np.sqrt(3) / 2., 1. / 2.])
+    self.delta3 = a * np.array([0.0, -1.0])
+    unit_cell_points = np.array([
+        np.array([0.0, 0.0]),
+        self.delta3, 
+        self.delta1 + self.delta3,
+    ])    
+    self.a1 = a * np.array([np.sqrt(3), 0.0])
+    self.a2 = a * np.array([np.sqrt(3) / 2., 3. / 2.])    
+    self.unit_cell = Lattice(unit_cell_points)
+
+    # self.height = np.sqrt(3) / 4.  # height of the unit cell
+    self.points = unit_cell_points
+
+  def get_expanded_lattice(
+      self,
+      size_x: int,
+      size_y: int,        
+  ) -> Lattice:
+    """Returns a lattice of size `size_x` x `size_y`."""
+    expanded_lattice = sum(
+        self.unit_cell.shift(self.a1 * i + self.a2 * j)
+        for i, j in itertools.product(range(size_x), range(size_y))
+    )
+    return expanded_lattice
+  
+
 class EnlargedDiceLattice(Lattice):
   def __init__(
       self,

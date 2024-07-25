@@ -26,6 +26,23 @@ def _point_line_distance(
   return np.abs(A * px + B * py + C) / np.sqrt(A**2 + B**2)
 
 
+def _linspace_nd(start: np.ndarray, end: np.ndarray, num:int=50):
+    """
+    Generate a set of linearly spaced points between two endpoints in n-dimensional space.
+
+    Args:
+        start: The starting point coordinates.
+        end: The ending point coordinates.
+        num: The number of points to generate.
+
+    Returns:
+        numpy.ndarray: An array of shape (num, len(start)) containing linearly spaced points.
+    """
+    # Create an array of shape (num, 1) for each dimension
+    steps = np.linspace(0, 1, num)[:, np.newaxis]
+    return start + steps * (end - start)
+
+
 @dataclasses.dataclass
 class ReciprocalDiceLattice:
   size_x: int
