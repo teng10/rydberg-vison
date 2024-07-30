@@ -9,11 +9,12 @@ import numpy as np
 import jax
 import jax.numpy as jnp
 
+from mean_field import hamiltonians
 from mean_field.lattices import Lattice
 from mean_field.reciprocal_lattices import ReciprocalDiceLattice
-from mean_field.hamiltonian import Hamiltonian
+from mean_field.hamiltonians import Hamiltonian
 
-
+  
 class DynamicalStructureFactor(abc.ABC):
   """Class for computing the dynamical structure factor."""
 
@@ -28,10 +29,11 @@ class DynamicalStructureFactor(abc.ABC):
     self.hamiltonian = hamiltonian
     self.sublattice = hamiltonian.sublattice
     self.kpoints = bz_lattice.kpoints
-    self.decimal_precision = 5
+    self.decimal_precision = 8
 
     self.spectrum_k = self.hamiltonian.get_eignenvalue_spectra(self.kpoints)
-    self.spectrum_mk = self.hamiltonian.get_eignenvalue_spectra( -self.kpoints)
+    #TODO(YT): verify the symmetry of the Hamiltonian
+    self.spectrum_mk = hamiltonians._get_mk_spectra_symmetry(self.spectrum_k)
     self.qmk_spectra = {}
     self.kmq_spectra = {}
 
@@ -43,7 +45,7 @@ class DynamicalStructureFactor(abc.ABC):
     e.g. V_{k1}^{\alpha l}V_{k2}^{\beta l}
     arriving at a tensor of shape (k, \alpha, \beta, l) without summing over l.
     """
-    return np.expand_dims(eigvecs_k1, axis=2) * np.expand_dims(eigvecs_k1, axis=1)
+    return np.expand_dims(eigvecs_k1, axis=2) * np.expand_dims(eigvecs_k2, axis=1)
 
   def _lorenzian(self, omega: float, omegap: float, gamma:float=0.1) -> float:
     """Lorenzian function to approximate delta function over frequencies.
@@ -73,8 +75,8 @@ class DynamicalStructureFactor(abc.ABC):
     Returns:
       Frequency dependent tensor of shape (k, l, l').
     """
-    eigvals_k = np.expand_dims(eigvals_k, axis=2)
-    eigvals_qmk = np.expand_dims(eigvals_qmk, axis=1)
+    eigvals_k = jnp.expand_dims(eigvals_k, axis=2)
+    eigvals_qmk = jnp.expand_dims(eigvals_qmk, axis=1)
     return jnp.pi**2 * (
       1. / jnp.sqrt(eigvals_k) + 1. / jnp.sqrt(eigvals_qmk)
     ) * (
@@ -168,7 +170,7 @@ class DynamicalStructureFactor(abc.ABC):
       second_term = 1. / len(self.kpoints) * jnp.einsum(
           'ab, gd, pab, pgd, padm, pbgn, pmn -> ',
           self.eta, self.eta,
-          momentum_q, momentum_mq, eigvec_k, eigvec_qk, freq_mat,
+          momentum_q, momentum_q, eigvec_k, eigvec_qk, freq_mat,
           optimize=True,
       )
       structure_factor_qs.append(first_term + second_term)
@@ -191,9 +193,7 @@ class DynamicalStructureFactor(abc.ABC):
     spectrum_qmk = self.hamiltonian.get_eignenvalue_spectra(
         -(self.kpoints - q_vector)
     )
-    spectrum_kmq = self.hamiltonian.get_eignenvalue_spectra(
-      self.kpoints - q_vector
-    )
+    spectrum_kmq = hamiltonians._get_mk_spectra_symmetry(spectrum_qmk)
     eigvals_k = self.spectrum_k.evals
     eigvals_qmk = spectrum_qmk.evals
 
@@ -209,7 +209,7 @@ class DynamicalStructureFactor(abc.ABC):
     eigvec_qk = self._compute_eigenvector_matrix_elements(eigvecs_qmk, eigvecs_kmq)
 
     first_partial_contraction = np.einsum(
-        'ab, gd, pab, pgd, pagm, pdbn -> pmn',
+        'ab, gd, pab, pgd, pagm, pbdn -> pmn',
         self.eta, self.eta,
         momentum_q, momentum_mq, eigvec_k, eigvec_qk, 
         optimize=True,
@@ -217,9 +217,11 @@ class DynamicalStructureFactor(abc.ABC):
     second_partial_contraction = np.einsum(
         'ab, gd, pab, pgd, padm, pbgn -> pmn',
         self.eta, self.eta,
-        momentum_q, momentum_mq, eigvec_k, eigvec_qk, 
+        momentum_q, momentum_q, eigvec_k, eigvec_qk, 
         optimize=True,
     )
+    # print(f"the zero eigenvalues for k are {np.where(eigvals_k == 0)}")
+    # print(f"the zero eigenvalues for qmk are {np.where(eigvals_qmk == 0)}")
     return (
         first_partial_contraction, second_partial_contraction,
         eigvals_k, eigvals_qmk

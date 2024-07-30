@@ -1,4 +1,5 @@
 """Mean field Hamiltonian utilities."""
+from __future__ import annotations
 
 import abc
 from abc import abstractmethod
@@ -6,6 +7,13 @@ import dataclasses
 
 import numpy as np
 import scipy as sp
+
+
+def _get_mk_spectra_symmetry(k_spectra: MeanFieldSpectrum)-> MeanFieldSpectrum:
+  """Get the spectra for -k points for a Hamiltonian with symmetry."""
+  return MeanFieldSpectrum(
+    k_spectra.evals, np.conjugate(k_spectra.evecs), -k_spectra.kpoints
+  )
 
 
 @dataclasses.dataclass
@@ -196,32 +204,30 @@ class IsingHuhHamiltonian(ClassicalHamiltonian):
       params: dict,
       brillouin_zone = None,
       sublattice: int = 12,
+      t0: float = 1. # nn coupling
   ):
     self.params = params
+    self.t0 = t0
     # Check that necessary parameters are provided.
     # TODO(YT):
     assert 't' in params, 't is not provided.'
-    assert 't0' in params, 't0 is not provided.'
     assert 'm_tri' in params, 'm_tri is not provided.'
-    assert 'm_hex' in params, 'm_hex is not provided.'
-    assert 'u' in params, 'u is not provided.'
-    assert 'v' in params, 'v is not provided.'
+    assert 'm_hex_ratio' in params, 'm_hex/m_tri ratio is not provided.'
     self._brillouin_zone = brillouin_zone
     self.sublattice = sublattice
 
   def momentum_matrix(self, kx, ky):
     t = self.params['t']
-    t0 = self.params['t0']
     mass_tri = self.params['m_tri']
-    mass_hex = self.params['m_hex']
-    u = self.params['u']
-    v = self.params['v']
+    mass_hex = self.params['m_hex_ratio'] * mass_tri
+    u = np.array([np.sqrt(3.), 0.])
+    v = np.array([np.sqrt(3.) / 2., -3. / 2.])
     k = np.array([kx, ky])
     nnn_1 = t * (1. + np.exp(2.j * k @ u) + np.exp(2.j * k @ (u - v)))
     nnn_2 = t * (1. + np.exp(2.j * k @ u) + np.exp(2.j * k @ v))
     nnn_3 = t * (1. + np.exp(2.j * k @ v) + np.exp(2.j * k @ (v - u)))
-    nn_1 = t0 * np.exp(2.j * k @ u)
-    nn_2 = t0 * np.exp(2.j * k @ v)
+    nn_1 = self.t0 * np.exp(2.j * k @ u)
+    nn_2 = self.t0 * np.exp(2.j * k @ v)
     # Define the coupling matrix.
     coupling_mat = np.zeros(
         (self.sublattice, self.sublattice),
@@ -255,14 +261,14 @@ class IsingHuhHamiltonian(ClassicalHamiltonian):
     coupling_mat[9, 8] = 1.
     coupling_mat[10, 8] = 1.
     coupling_mat[11, 8] = 1.
-    # Fill in complex conjugate.
-    ham_mat = coupling_mat + np.conjugate(coupling_mat.T)
+    # Fill in complex conjugate. Minus sign for - J \sum_{<i, j>} H_ij.
+    ham_mat =  - (coupling_mat + np.conjugate(coupling_mat.T))
     # add onsite term.
     field_onsite = np.array(
       [
       mass_tri, mass_hex, mass_hex, mass_tri, mass_tri, mass_tri,
       mass_tri, mass_hex, mass_hex, mass_tri, mass_tri, mass_tri
       ]
-    )
+    ) ** 2
     ham_mat += np.diag(field_onsite)
-    return -1. * ham_mat
+    return ham_mat

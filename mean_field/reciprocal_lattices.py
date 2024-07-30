@@ -1,5 +1,6 @@
 """Reciprocal lattices and first Brillouin zone."""
 #TODO(YT): could combine this with the lattice module.
+from __future__ import annotations
 
 import dataclasses
 import functools
@@ -41,6 +42,34 @@ def _linspace_nd(start: np.ndarray, end: np.ndarray, num:int=50):
     # Create an array of shape (num, 1) for each dimension
     steps = np.linspace(0, 1, num)[:, np.newaxis]
     return start + steps * (end - start)
+
+
+BZ_PATH_REGISTRY = {}
+
+
+def _register_bz_path(get_path_fn, name: str):
+  """Registers `get_reg_fn` in global `REGULARIZER_REGISTRY`."""
+  registered_fn = BZ_PATH_REGISTRY.get(name, None)
+  if registered_fn is None:
+    BZ_PATH_REGISTRY[name] = get_path_fn
+  else:
+    if registered_fn != get_path_fn:
+      raise ValueError(f'{name} is already registerd {registered_fn}.')
+
+
+register_bz_path_fn = lambda name: functools.partial(
+    _register_bz_path, name=name
+)
+
+
+@register_bz_path_fn('gamma_m_k_gamma')
+def _gamma_m_k_path(bz_lattice: ReciprocalDiceLattice, n_points: int = 50):
+  """Generates a path from Gamma to M to K in the Brillouin zone."""
+  return np.concatenate([
+      _linspace_nd(2 * bz_lattice.p_gamma, 2 * bz_lattice.p_m, n_points), 
+      _linspace_nd(2 * bz_lattice.p_m, 2 * bz_lattice.p_k, n_points), 
+      _linspace_nd(2 * bz_lattice.p_k, 2 * bz_lattice.p_gamma, n_points)
+  ])
 
 
 @dataclasses.dataclass

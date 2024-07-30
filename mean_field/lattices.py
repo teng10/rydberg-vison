@@ -254,7 +254,8 @@ class EnlargedDiceLattice(Lattice):
     eta_mat[8, 9] = 1.
     eta_mat[8, 10] = 1.
     eta_mat[8, 11] = 1.
-    return eta_mat
+    # return eta_mat
+    return eta_mat + np.transpose(eta_mat)
 
   def delta(self):
     """Definition of sublattice displacement tensor."""
@@ -287,7 +288,8 @@ class EnlargedDiceLattice(Lattice):
     delta_tensor[8, 9] = self.delta1
     delta_tensor[8, 10] = self.delta3
     delta_tensor[8, 11] = - self.delta2
-    return delta_tensor
+    # return delta_tensor 
+    return delta_tensor - np.transpose(delta_tensor, (1, 0, 2))
 
 
 def get_restricted(

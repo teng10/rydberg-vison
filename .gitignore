@@ -1,4 +1,5 @@
 venv/
+.DS_STORE
 __pycache__/
 old_notebooks/
 old*/
