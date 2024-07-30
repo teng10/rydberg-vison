@@ -38,9 +38,14 @@ def ham_params_sweep_fn(
 SWEEP_FN_REGISTRY = {
     'sweep_t_m': list(ham_params_sweep_fn(
         ts=[0.1, 0.5],
-        m_tris=[-5, -10, -15],
+        m_tris=[2.5, 3., 3.5],
         m_hex_ratios=[0.5, 1., 2.]
     )),
+    'sweep_large_triangular': list(ham_params_sweep_fn(
+        ts=[0.1, 0.5],
+        m_tris=[5., ],
+        m_hex_ratios=[0.1, 0.5, 1.]
+    )),    
 }
 
 
@@ -55,7 +60,7 @@ def get_config():
   config.task.name = DEFAULT_TASK_NAME #TODO(YT): add config option
   config.task.bz_lattice_size = 50
   config.task.kwargs = {
-      't': 0.5, 'm_tri': -20, 'm_hex_ratio': -2.5
+      't': 0.5, 'm_tri': 25, 'm_hex_ratio': 2.5
   }
   # Structure factor computation.
   config.sf = config_dict.ConfigDict()

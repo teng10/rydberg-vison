@@ -4,7 +4,7 @@ from absl.testing import parameterized
 
 import numpy as np
 
-from mean_field import hamiltonian
+from mean_field import hamiltonians
 
 
 class HamiltonianTests(parameterized.TestCase):
@@ -17,7 +17,7 @@ class HamiltonianTests(parameterized.TestCase):
         'u': np.array([np.sqrt(3.), 0.]),
         'v': np.array([np.sqrt(3.) / 2., -3. / 2.])
     }
-    self.visonham = hamiltonian.IsingHuhHamiltonian(my_params) # Hamiltonian
+    self.visonham = hamiltonians.IsingHuhHamiltonian(my_params) # Hamiltonian
 
   def test_hermicity(self):
     """Tests for hermicity of the hamiltonian."""
@@ -60,7 +60,7 @@ class HamiltonianTests(parameterized.TestCase):
     actual_spectrum_mk = self.visonham.get_eignenvalue_spectra(
         -q_vec[None, ...]
     )
-    expected_spectrum_mk = hamiltonian._get_mk_spectra_symmetry(spectrum)
+    expected_spectrum_mk = hamiltonians._get_mk_spectra_symmetry(spectrum)
     np.testing.assert_allclose(
         actual_spectrum_mk.evals, expected_spectrum_mk.evals
     )

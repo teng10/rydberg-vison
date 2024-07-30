@@ -22,12 +22,12 @@ mkdir -p ${data_dir}
 echo "Data saving directory is ${data_dir}"
 echo "array_task_id=${SLURM_ARRAY_TASK_ID}"
 
-python -m tn_generative.run_data_generation \
---data_config=mean_field/ham_configs/${1:-'ising'}_config.py \
---data_config.job_id=${SLURM_ARRAY_JOB_ID} \
---data_config.task_id=${SLURM_ARRAY_TASK_ID} \
---data_config.output.data_dir=${data_dir} \
---data_config.sweep_name=${2:-"sweep_t_m"} # $2-SWEEP_NAME
+python -m mean_field.run_structure_factor \
+--ham_config=mean_field/ham_configs/${1:-'ising'}_config.py \
+--ham_config.job_id=${SLURM_ARRAY_JOB_ID} \
+--ham_config.task_id=${SLURM_ARRAY_TASK_ID} \
+--ham_config.output.data_dir=${data_dir} \
+--ham_config.sweep_name=${2:-"sweep_t_m"} # $2-SWEEP_NAME
 
 echo "job finished"
 > "$FILEPATH/logsVison/${SLURM_ARRAY_JOB_ID}_log.txt"
