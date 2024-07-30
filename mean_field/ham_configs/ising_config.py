@@ -60,7 +60,7 @@ def get_config():
   config.task.name = DEFAULT_TASK_NAME #TODO(YT): add config option
   config.task.bz_lattice_size = 50
   config.task.kwargs = {
-      't': 0.5, 'm_tri': 25, 'm_hex_ratio': 2.5
+      't': 0.5, 'm_tri': 25., 'm_hex_ratio': 2.5
   }
   # Structure factor computation.
   config.sf = config_dict.ConfigDict()
