@@ -1,5 +1,7 @@
 """Helper function for plotting."""
 
+import numpy as np
+
 from mean_field import lattices
 from mean_field import node_collections
 
@@ -23,7 +25,10 @@ def plot_bonds(nodes_collection, ax, c='r', lw=3, plot_with_arrows: bool=False):
                dx=dx, dy=dy, width=0.07, head_width=0.5,
                length_includes_head=True)
     else:
-      ax.plot(bond_vector[:, 0], bond_vector[:, 1], c=c, lw=lw)
+      if type(lw) == np.ndarray:
+        ax.plot(bond_vector[:, 0], bond_vector[:, 1], c=c, lw=lw[i])
+      else:
+        ax.plot(bond_vector[:, 0], bond_vector[:, 1], c=c, lw=lw)
 
 
 def plot_loops(nodes_collection, ax, c='r', lw=2, plot_with_arrows: bool=False):
@@ -37,3 +42,8 @@ def plot_loops(nodes_collection, ax, c='r', lw=2, plot_with_arrows: bool=False):
                length_includes_head=True)
     else:
       ax.plot(edge[:, 0], edge[:, 1], c=c, lw=lw)
+
+
+def plot_polygon(polygon, ax, c='r', label='polygon'):
+  x,y = polygon.exterior.xy
+  ax.plot(x,y, c=c, label=label)

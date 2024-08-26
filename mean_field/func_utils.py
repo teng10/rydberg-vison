@@ -13,7 +13,7 @@ def vectorized_method(otypes=None, signature=None):
   def decorator(fn):
     vectorized = np.vectorize(fn, otypes=otypes, signature=signature)
     @functools.wraps(fn)
-    def wrapper(*args):
-      return vectorized(*args)
+    def wrapper(*args, **kwargs):
+      return vectorized(*args, **kwargs)
     return wrapper
   return decorator
