@@ -13,7 +13,8 @@
 #SBATCH -o /n/home11/yteng/experiments/Vison/logsVison/%A_%a.out # Standard out
 #SBATCH -e /n/home11/yteng/experiments/Vison/logsVison/%A_%a.err # Standard err
 module load python/3.10.9-fasrc01
-source activate rydberg-vison
+# source activate rydberg-vison
+source ../../venv/bin/activate
 package_path="/n/home11/yteng/rydberg-vison/"
 cd ${package_path}
 FILEPATH="/n/home11/yteng/experiments/Vison"
