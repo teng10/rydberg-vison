@@ -61,7 +61,7 @@ class DynamicalStructureFactor(abc.ABC):
     e.g. V_{k1}^{\alpha l}V_{k2}^{\beta l}
     arriving at a tensor of shape (k, \alpha, \beta, l) without summing over l.
     """
-    return np.expand_dims(eigvecs_k1, axis=2) * np.expand_dims(eigvecs_k2, axis=1)
+    return jnp.expand_dims(eigvecs_k1, axis=2) * jnp.expand_dims(eigvecs_k2, axis=1)
 
   def _lorenzian(self, omega: float, omegap: float, gamma:float=0.1) -> float:
     """Lorenzian function to approximate delta function over frequencies.
@@ -121,9 +121,9 @@ class DynamicalStructureFactor(abc.ABC):
 
   def momentum_factor_matrix(
       self,
-      q_vector: np.ndarray,
+      q_vector: jnp.ndarray,
       sign: int=1,
-  ) -> np.ndarray:
+  ) -> jnp.ndarray:
     """Computes the momentum exponential factor matrix (momentum, alpha, beta).
 
     e^{i * sign (q / 2 - k) \cdot \delta_{\alpha \beta}}
@@ -135,8 +135,8 @@ class DynamicalStructureFactor(abc.ABC):
     Returns:
       The momentum factor matrix.
     """
-    return np.exp(1j * sign * (
-        np.einsum('ij, klj -> ikl', q_vector / 2. - self.kpoints, self.delta)
+    return jnp.exp(1j * sign * (
+        jnp.einsum('ij, klj -> ikl', q_vector / 2. - self.kpoints, self.delta)
     ))
 
   def _vector_hashkey(self, vector: np.ndarray):
@@ -265,8 +265,8 @@ class DynamicalStructureFactor(abc.ABC):
     )
     return first_term + second_term
 
-  def get_ingredients(self, q_vector: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+  def get_ingredients(self, q_vector: jnp.ndarray
+    ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     """Computes the ingredients for the structure factor.
     
     Ingredients are the partial contractions of the structure factor,
@@ -296,13 +296,13 @@ class DynamicalStructureFactor(abc.ABC):
     eigvec_k = self._compute_eigenvector_matrix_elements(eigvecs_k, eigvecs_mk)
     eigvec_qk = self._compute_eigenvector_matrix_elements(eigvecs_qmk, eigvecs_kmq)
 
-    first_partial_contraction = np.einsum(
+    first_partial_contraction = jnp.einsum(
         'ab, gd, pab, pgd, pagm, pbdn -> pmn',
         self.eta, self.eta,
         momentum_q, momentum_mq, eigvec_k, eigvec_qk, 
         optimize=True,
     )
-    second_partial_contraction = np.einsum(
+    second_partial_contraction = jnp.einsum(
         'ab, gd, pab, pgd, padm, pbgn -> pmn',
         self.eta, self.eta,
         momentum_q, momentum_q, eigvec_k, eigvec_qk, 
@@ -316,7 +316,7 @@ class DynamicalStructureFactor(abc.ABC):
   def calculate_from_ingredients(
       self,
       omega: float,
-      ingredients: Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray],
+      ingredients: Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray],
   )-> float:
     """Computes the structure factor from precomputed partial contractions.
     
@@ -356,8 +356,8 @@ class DynamicalStructureFactor(abc.ABC):
   # @register_property_fn('dynamical_structure_factor')
   def structure_factor_partially_contracted(
         self, 
-        q_vectors: np.ndarray, 
-        omegas: np.ndarray
+        q_vectors: jnp.ndarray, 
+        omegas: jnp.ndarray
     )-> jnp.ndarray:
     """Compute structure factor for a single q and all omegas."""
 
