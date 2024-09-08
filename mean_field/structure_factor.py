@@ -14,7 +14,23 @@ from mean_field.lattices import Lattice
 from mean_field.reciprocal_lattices import ReciprocalDiceLattice
 from mean_field.hamiltonians import Hamiltonian
 
-  
+PHYSICAL_PROPERTIES_REGISTRY = {}
+
+def _register_property_fn(get_property_fn, name: str):
+  """Registers `get_property_fn` in global `PHYSICAL_PROPERTIES_REGISTRY`."""
+  registered_fn = PHYSICAL_PROPERTIES_REGISTRY.get(name, None)
+  if registered_fn is None:
+    PHYSICAL_PROPERTIES_REGISTRY[name] = get_property_fn
+  else:
+    if registered_fn != get_property_fn:
+      raise ValueError(f'{name} is already registerd {registered_fn}.')
+
+
+register_property_fn = lambda name: functools.partial(
+    _register_property_fn, name=name
+)
+
+
 class DynamicalStructureFactor(abc.ABC):
   """Class for computing the dynamical structure factor."""
 
@@ -70,7 +86,8 @@ class DynamicalStructureFactor(abc.ABC):
 
     Args:
       omega: The frequency.
-      q_vector: The momentum transfer.
+      eigvals_k: eigvals for k, l.
+      eigvals_qmk: eigvals for q - k, l'.
 
     Returns:
       Frequency dependent tensor of shape (k, l, l').
@@ -83,6 +100,24 @@ class DynamicalStructureFactor(abc.ABC):
         1 / (2 * (jnp.sqrt(eigvals_k) + jnp.sqrt(eigvals_qmk)))
     ) * self._lorenzian(omega, jnp.sqrt(eigvals_k) + jnp.sqrt(eigvals_qmk))
 
+  def _frequency_factor_static(self, eigvals_k, eigvals_qmk):
+    """Computes the frequency dependent factor for static structure factor.
+
+    (1/\sqrt{\epsilon_l} + 1/\sqrt{\epsilon_l'}) \n
+    \times 1/(\sqrt{\epsilon_l}
+
+    Args:
+      eigvals_k: eigvals for k, l.
+      eigvals_qmk: eigvals for q - k, l'.
+
+    Returns:
+      Frequency dependent tensor of shape (k, l, l').
+    """
+    eigvals_k = jnp.expand_dims(eigvals_k, axis=2)
+    eigvals_qmk = jnp.expand_dims(eigvals_qmk, axis=1)
+    return jnp.pi**2 / 2. * (
+      1. / jnp.sqrt(eigvals_k) + 1. / jnp.sqrt(eigvals_qmk)
+    ) / (jnp.sqrt(eigvals_k) + jnp.sqrt(eigvals_qmk)) 
 
   def momentum_factor_matrix(
       self,
@@ -220,8 +255,6 @@ class DynamicalStructureFactor(abc.ABC):
         momentum_q, momentum_q, eigvec_k, eigvec_qk, 
         optimize=True,
     )
-    # print(f"the zero eigenvalues for k are {np.where(eigvals_k == 0)}")
-    # print(f"the zero eigenvalues for qmk are {np.where(eigvals_qmk == 0)}")
     return (
         first_partial_contraction, second_partial_contraction,
         eigvals_k, eigvals_qmk
@@ -247,7 +280,27 @@ class DynamicalStructureFactor(abc.ABC):
         'pmn, pmn -> ',
         first_ingredient + second_ingredient, freq_mat
     )
-      
+  
+  def calculate_static_structure_factor(
+      self,
+      ingredients: Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray],
+  )-> float:
+    """Computes the structure factor from precomputed partial contractions.
+    
+    Args:
+      ingredients: The ingredients for the structure factor.
+
+    Returns:
+      The structure factor.  
+    """
+    first_ingredient, second_ingredient, eigvals_k, eigvals_qmk = ingredients
+    freq_mat = self._frequency_factor_static(eigvals_k, eigvals_qmk)
+    return 1. / len(first_ingredient) * jnp.einsum(
+        'pmn, pmn -> ',
+        first_ingredient + second_ingredient, freq_mat
+    )  
+  
+  @register_property_fn('dynamical_structure_factor')
   def structure_factor_partially_contracted(
         self, 
         q_vectors: np.ndarray, 
@@ -265,3 +318,20 @@ class DynamicalStructureFactor(abc.ABC):
       sf_q_vmap_jitted = jax.jit(sf_q_vmap)
       sf_all_qs.append(sf_q_vmap_jitted(omegas))
     return jnp.stack(sf_all_qs) 
+
+  @register_property_fn('static_structure_factor')
+  def static_structure_factor_partially_contracted(
+        self, 
+        q_vectors: np.ndarray
+    )-> jnp.ndarray:
+    """Compute static structure factor for a single q."""
+
+    sf_all_qs = []
+    for q_vector in tqdm.tqdm(q_vectors):
+      sf_q_partial_contraction_fn = functools.partial(
+          self.calculate_static_structure_factor,
+          ingredients=self.get_ingredients(q_vector)
+      )
+      sf_q_jitted = jax.jit(sf_q_partial_contraction_fn)
+      sf_all_qs.append(sf_q_jitted())
+    return jnp.stack(sf_all_qs)

@@ -4,10 +4,38 @@ from __future__ import annotations
 import abc
 from abc import abstractmethod
 import dataclasses
+import functools
 
 import numpy as np
 import scipy as sp
 
+
+HAMILTONIAN_REGISTRY = {}
+
+def _register_ham_fn(get_ham_fn, name: str):
+  """Registers `get_ham_fn` in global `HAMILTONIAN_REGISTRY`."""
+  registered_fn = HAMILTONIAN_REGISTRY.get(name, None)
+  if registered_fn is None:
+    HAMILTONIAN_REGISTRY[name] = get_ham_fn
+  else:
+    if registered_fn != get_ham_fn:
+      raise ValueError(f'{name} is already registerd {registered_fn}.')
+
+
+register_ham_fn = lambda name: functools.partial(
+    _register_ham_fn, name=name
+)
+
+@register_ham_fn('ising_pi_flux')
+def get_surface_code(
+    ham_params: dict
+) -> IsingHuhHamiltonian:
+  """Generate Ising Hamiltonian with pi flux gauge field configurations.
+  
+  Args:
+    ham_params: Hamiltonian parameters.
+  """
+  return IsingHuhHamiltonian(ham_params)
 
 def _get_mk_spectra_symmetry(k_spectra: MeanFieldSpectrum)-> MeanFieldSpectrum:
   """Get the spectra for -k points for a Hamiltonian with symmetry."""
