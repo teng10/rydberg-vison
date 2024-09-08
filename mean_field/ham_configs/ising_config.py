@@ -66,6 +66,11 @@ SWEEP_FN_REGISTRY = {
         m_tris=[2.5, 3., 3.5],
         m_hex_ratios=[0.5, 1., 2.]
     )),
+    'sweep_af_ferro': list(ham_params_sweep_fn(
+        ts=[0.5, -0.5],
+        m_tris=[2.5, ],
+        m_hex_ratios=[0.5, 1., 2.]
+    )),    
 }
 
 
@@ -84,7 +89,7 @@ def get_config():
   }
   # Structure factor computation.
   config.sf = config_dict.ConfigDict()
-  config.sf.omegas = np.linspace(.1, 5., 500)
+  config.sf.omegas = np.linspace(.1, 7., 800)
   config.sf.q_path_name = 'gamma_m_k_gamma'
   config.sf.q_steps = 100
   # sweep parameters.

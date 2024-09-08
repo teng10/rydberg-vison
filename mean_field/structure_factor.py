@@ -80,7 +80,7 @@ class DynamicalStructureFactor(abc.ABC):
     return jnp.pi**2 * (
       1. / jnp.sqrt(eigvals_k) + 1. / jnp.sqrt(eigvals_qmk)
     ) * (
-        omega / (omega**2 + (jnp.sqrt(eigvals_k) + jnp.sqrt(eigvals_qmk))**2)
+        1 / (2 * (jnp.sqrt(eigvals_k) + jnp.sqrt(eigvals_qmk)))
     ) * self._lorenzian(omega, jnp.sqrt(eigvals_k) + jnp.sqrt(eigvals_qmk))
 
 
