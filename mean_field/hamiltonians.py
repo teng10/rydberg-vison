@@ -7,6 +7,7 @@ import dataclasses
 import functools
 
 import numpy as np
+import jax.numpy as jnp
 import scipy as sp
 
 
@@ -27,7 +28,7 @@ register_ham_fn = lambda name: functools.partial(
 )
 
 @register_ham_fn('ising_pi_flux')
-def get_surface_code(
+def get_ising_pi_flux(
     ham_params: dict
 ) -> IsingHuhHamiltonian:
   """Generate Ising Hamiltonian with pi flux gauge field configurations.
@@ -46,9 +47,9 @@ def _get_mk_spectra_symmetry(k_spectra: MeanFieldSpectrum)-> MeanFieldSpectrum:
 
 @dataclasses.dataclass
 class MeanFieldSpectrum:
-  evals: np.ndarray
-  evecs: np.ndarray
-  kpoints: np.ndarray
+  evals: jnp.ndarray
+  evecs: jnp.ndarray
+  kpoints: jnp.ndarray
 
 
 class Hamiltonian(abc.ABC):
@@ -110,7 +111,7 @@ class Hamiltonian(abc.ABC):
           not recognized.'
       )
     return MeanFieldSpectrum(
-        np.array(eigenvalues), np.array(eigenvectors), kpoints
+        jnp.array(eigenvalues), jnp.array(eigenvectors), kpoints
     )
 
 class BosonHamiltonian(Hamiltonian):
@@ -129,7 +130,7 @@ class ClassicalHamiltonian(Hamiltonian):
 
   def diagonalize(self, kx, ky):
     ham_mat = self.momentum_matrix(kx, ky)
-    return sp.linalg.eigh(ham_mat)
+    return jnp.linalg.eigh(ham_mat)
 
 
 class BosonHuhHamiltonian(BosonHamiltonian):
@@ -250,53 +251,82 @@ class IsingHuhHamiltonian(ClassicalHamiltonian):
     mass_hex = self.params['m_hex_ratio'] * mass_tri
     u = np.array([np.sqrt(3.), 0.])
     v = np.array([np.sqrt(3.) / 2., -3. / 2.])
-    k = np.array([kx, ky])
-    nnn_1 = t * (1. + np.exp(2.j * k @ u) + np.exp(2.j * k @ (u - v)))
-    nnn_2 = t * (1. + np.exp(2.j * k @ u) + np.exp(2.j * k @ v))
-    nnn_3 = t * (1. + np.exp(2.j * k @ v) + np.exp(2.j * k @ (v - u)))
-    nn_1 = self.t0 * np.exp(2.j * k @ u)
-    nn_2 = self.t0 * np.exp(2.j * k @ v)
+    k = jnp.array([kx, ky])
+    nnn_1 = t * (1. + jnp.exp(2.j * k @ u) + jnp.exp(2.j * k @ (u - v)))
+    nnn_2 = t * (1. + jnp.exp(2.j * k @ u) + jnp.exp(2.j * k @ v))
+    nnn_3 = t * (1. + jnp.exp(2.j * k @ v) + jnp.exp(2.j * k @ (v - u)))
+    nn_1 = self.t0 * jnp.exp(2.j * k @ u)
+    nn_2 = self.t0 * jnp.exp(2.j * k @ v)
     # Define the coupling matrix.
-    coupling_mat = np.zeros(
+    coupling_mat = jnp.zeros(
         (self.sublattice, self.sublattice),
-        dtype=np.complex128
+        dtype=jnp.complex128
     )
-    coupling_mat[1, 0] = 1.
-    coupling_mat[2, 0] = 1.
-    coupling_mat[3, 0] = nnn_1
-    coupling_mat[7, 0] = nn_1
-    coupling_mat[3, 1] = 1.
-    coupling_mat[4, 1] = 1.
-    coupling_mat[5, 1] = -1.
-    coupling_mat[10, 1] = -nn_2
-    coupling_mat[11, 1] = nn_2
-    coupling_mat[3, 2] = nn_1 * np.conjugate(nn_2)
-    coupling_mat[4, 2] = -1.
-    coupling_mat[6, 2] = 1.
-    coupling_mat[9, 2] = nn_1
-    coupling_mat[11, 2] = -nn_1
-    coupling_mat[7, 3] = 1.
-    coupling_mat[8, 4] = 1.
-    coupling_mat[11, 4] = nnn_2
-    coupling_mat[7, 5] = 1.
-    coupling_mat[8, 5] = 1.
-    coupling_mat[10, 5] = nnn_3
-    coupling_mat[7, 6] = -1. * nn_1 * np.conjugate(nn_2)
-    coupling_mat[8, 6] = 1.
-    coupling_mat[9, 6] = nnn_1
-    coupling_mat[9, 7] = -1.
-    coupling_mat[10, 7] = np.conjugate(nn_1) * nn_2
-    coupling_mat[9, 8] = 1.
-    coupling_mat[10, 8] = 1.
-    coupling_mat[11, 8] = 1.
+    coupling_mat = coupling_mat.at[1, 0].set(1.)
+    coupling_mat = coupling_mat.at[2, 0].set(1.)
+    coupling_mat = coupling_mat.at[3, 0].set(nnn_1)
+    coupling_mat = coupling_mat.at[7, 0].set(nn_1)
+    coupling_mat = coupling_mat.at[3, 1].set(1.)
+    coupling_mat = coupling_mat.at[4, 1].set(1.)
+    coupling_mat = coupling_mat.at[5, 1].set(-1.)
+    coupling_mat = coupling_mat.at[10, 1].set(-nn_2)
+    coupling_mat = coupling_mat.at[11, 1].set(nn_2)
+    coupling_mat = coupling_mat.at[3, 2].set(nn_1 * jnp.conjugate(nn_2))
+    coupling_mat = coupling_mat.at[4, 2].set(-1.)
+    coupling_mat = coupling_mat.at[6, 2].set(1.)
+    coupling_mat = coupling_mat.at[9, 2].set(nn_1)
+    coupling_mat = coupling_mat.at[11, 2].set(-nn_1)
+    coupling_mat = coupling_mat.at[7, 3].set(1.)
+    coupling_mat = coupling_mat.at[8, 4].set(1.)
+    coupling_mat = coupling_mat.at[11, 4].set(nnn_2)
+    coupling_mat = coupling_mat.at[7, 5].set(1.)
+    coupling_mat = coupling_mat.at[8, 5].set(1.)
+    coupling_mat = coupling_mat.at[10, 5].set(nnn_3)
+    coupling_mat = coupling_mat.at[7, 6].set(-1. * nn_1 * jnp.conjugate(nn_2))
+    coupling_mat = coupling_mat.at[8, 6].set(1.)
+    coupling_mat = coupling_mat.at[9, 6].set(nnn_1)
+    coupling_mat = coupling_mat.at[9, 7].set(-1.)
+    coupling_mat = coupling_mat.at[10, 7].set(jnp.conjugate(nn_1) * nn_2)
+    coupling_mat = coupling_mat.at[9, 8].set(1.)
+    coupling_mat = coupling_mat.at[10, 8].set(1.)
+    coupling_mat = coupling_mat.at[11, 8].set(1.)
+
+    # coupling_mat[1, 0] = 1.
+    # coupling_mat[2, 0] = 1.
+    # coupling_mat[3, 0] = nnn_1
+    # coupling_mat[7, 0] = nn_1
+    # coupling_mat[3, 1] = 1.
+    # coupling_mat[4, 1] = 1.
+    # coupling_mat[5, 1] = -1.
+    # coupling_mat[10, 1] = -nn_2
+    # coupling_mat[11, 1] = nn_2
+    # coupling_mat[3, 2] = nn_1 * jnp.conjugate(nn_2)
+    # coupling_mat[4, 2] = -1.
+    # coupling_mat[6, 2] = 1.
+    # coupling_mat[9, 2] = nn_1
+    # coupling_mat[11, 2] = -nn_1
+    # coupling_mat[7, 3] = 1.
+    # coupling_mat[8, 4] = 1.
+    # coupling_mat[11, 4] = nnn_2
+    # coupling_mat[7, 5] = 1.
+    # coupling_mat[8, 5] = 1.
+    # coupling_mat[10, 5] = nnn_3
+    # coupling_mat[7, 6] = -1. * nn_1 * jnp.conjugate(nn_2)
+    # coupling_mat[8, 6] = 1.
+    # coupling_mat[9, 6] = nnn_1
+    # coupling_mat[9, 7] = -1.
+    # coupling_mat[10, 7] = jnp.conjugate(nn_1) * nn_2
+    # coupling_mat[9, 8] = 1.
+    # coupling_mat[10, 8] = 1.
+    # coupling_mat[11, 8] = 1.
     # Fill in complex conjugate. Minus sign for - J \sum_{<i, j>} H_ij.
-    ham_mat =  - (coupling_mat + np.conjugate(coupling_mat.T))
+    ham_mat =  - (coupling_mat + jnp.conjugate(jnp.transpose(coupling_mat)))
     # add onsite term.
-    field_onsite = np.array(
+    field_onsite = jnp.array(
       [
       mass_tri, mass_hex, mass_hex, mass_tri, mass_tri, mass_tri,
       mass_tri, mass_hex, mass_hex, mass_tri, mass_tri, mass_tri
       ]
     ) ** 2
-    ham_mat += np.diag(field_onsite)
+    ham_mat += jnp.diag(field_onsite)
     return ham_mat

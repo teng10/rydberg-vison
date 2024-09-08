@@ -211,6 +211,59 @@ class DynamicalStructureFactor(abc.ABC):
       structure_factor_qs.append(first_term + second_term)
     return jnp.array(structure_factor_qs)
 
+  def compute_static_structure_factor(
+      self,
+      q_vector: np.ndarray,
+  ) -> jnp.ndarray:
+    """Computes the dynamical structure factor.
+
+    Args:
+      q_vectors: The momentum transfers.
+
+    Returns:
+      The dynamical structure factor.
+    """
+    # Compute all the spectra for the different momentum transfers q
+    spectrum_qmk = self.hamiltonian.get_eignenvalue_spectra(
+        -(self.kpoints - q_vector)
+    )
+    spectrum_kmq = self.hamiltonian.get_eignenvalue_spectra(
+        (self.kpoints - q_vector)
+    )    
+
+    eigvals_k = self.spectrum_k.evals
+    eigvals_qmk = spectrum_qmk.evals
+
+    eigvecs_k = self.spectrum_k.evecs
+    eigvecs_qmk = spectrum_qmk.evecs
+    eigvecs_kmq = spectrum_kmq.evecs
+    eigvecs_mk = self.spectrum_mk.evecs
+
+    momentum_q = self.momentum_factor_matrix(q_vector, 1)
+    momentum_mq = self.momentum_factor_matrix(q_vector, -1)
+
+    eigvec_k = self._compute_eigenvector_matrix_elements(
+        eigvecs_k, eigvecs_mk
+    )
+    eigvec_qk = self._compute_eigenvector_matrix_elements(
+        eigvecs_qmk, eigvecs_kmq
+    )
+
+    freq_mat = self._frequency_factor_static(eigvals_k, eigvals_qmk)
+
+    first_term = 1. / len(self.kpoints) * jnp.einsum(
+        'ab, gd, pab, pgd, pagm, pbdn, pmn -> ',
+        self.eta, self.eta,
+        momentum_q, momentum_mq, eigvec_k, eigvec_qk, freq_mat,
+        optimize=True,
+    )
+    second_term = 1. / len(self.kpoints) * jnp.einsum(
+        'ab, gd, pab, pgd, padm, pbgn, pmn -> ',
+        self.eta, self.eta,
+        momentum_q, momentum_q, eigvec_k, eigvec_qk, freq_mat,
+        optimize=True,
+    )
+    return first_term + second_term
 
   def get_ingredients(self, q_vector: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -300,7 +353,7 @@ class DynamicalStructureFactor(abc.ABC):
         first_ingredient + second_ingredient, freq_mat
     )  
   
-  @register_property_fn('dynamical_structure_factor')
+  # @register_property_fn('dynamical_structure_factor')
   def structure_factor_partially_contracted(
         self, 
         q_vectors: np.ndarray, 
@@ -319,7 +372,7 @@ class DynamicalStructureFactor(abc.ABC):
       sf_all_qs.append(sf_q_vmap_jitted(omegas))
     return jnp.stack(sf_all_qs) 
 
-  @register_property_fn('static_structure_factor')
+  # @register_property_fn('static_structure_factor')
   def static_structure_factor_partially_contracted(
         self, 
         q_vectors: np.ndarray
