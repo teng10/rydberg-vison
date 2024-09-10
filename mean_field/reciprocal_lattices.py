@@ -6,6 +6,7 @@ import dataclasses
 import functools
 import itertools
 
+import einops
 import numpy as np
 import shapely
 
@@ -70,6 +71,15 @@ def _gamma_m_k_path(bz_lattice: ReciprocalDiceLattice, n_points: int = 50):
       _linspace_nd(2 * bz_lattice.p_m, 2 * bz_lattice.p_k, n_points), 
       _linspace_nd(2 * bz_lattice.p_k, 2 * bz_lattice.p_gamma, n_points)
   ])
+
+
+@register_bz_path_fn('square_full')
+def _square_full_path(sqaure_length: float=np.pi, n_points: int=50):
+  """Generates a path that covers the square ."""
+  xv = np.linspace(-sqaure_length, sqaure_length, n_points)
+  yv = np.linspace(-sqaure_length, sqaure_length, n_points)
+  xy_grid = np.stack([xv.T, yv.T])
+  return einops.rearrange(xy_grid, 'p x y -> (x y) p')
 
 
 @dataclasses.dataclass

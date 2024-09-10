@@ -24,7 +24,7 @@ def combine_complex_ds(ds: xr.Dataset) -> xr.Dataset:
       ds = ds.drop_vars([var_real, var_imag])
   return ds
 
-def convert_to_real_ds(ds: xr.Dataset, tol: float=1e-5) -> xr.Dataset:
+def convert_to_real_ds(ds: xr.Dataset, tol: float=1e-4) -> xr.Dataset:
   """Check and converts complex dataset to real dataset."""
   for var_name in ds.data_vars:
     if np.all(np.abs(ds[var_name].imag) < tol):

@@ -1,7 +1,7 @@
 """Main file for running computations of structure factor."""
   # run this script with the following command in the terminal:
 # python -m mean_field.run_structure_factor \
-# --ham_config=mean_field/ham_configs/ising_config.py \
+# --ham_config=mean_field/ham_configs/ising_config_test.py \
 # --ham_config.job_id=1 \
 # --ham_config.task_id=0
 from absl import app
@@ -11,6 +11,7 @@ import os
 
 from ml_collections import config_flags
 import numpy as np
+import jax.numpy as jnp
 import xarray as xr
 
 from mean_field import data_utils
@@ -23,9 +24,11 @@ config_flags.DEFINE_config_file('ham_config')
 FLAGS = flags.FLAGS
 
 import jax
-jax.config.update("jax_debug_nans", False)
-jax.config.update("jax_disable_jit", True)
+# jax.config.update("jax_disable_jit", True)
+jax.config.update("jax_enable_x64", True)
 
+
+PHYSICAL_PROPERTIES_REGISTRY = structure_factor.PHYSICAL_PROPERTIES_REGISTRY
 
 def _compute_structure_factor(
     ham_params: dict,
@@ -33,6 +36,7 @@ def _compute_structure_factor(
     omegas: np.ndarray,
     q_path_name: str,
     q_steps: int,
+    sf_type: str,
 ):
   bz_dice = reciprocal_lattices.ReciprocalDiceLattice(
       bz_lattice_size, bz_lattice_size
@@ -45,8 +49,31 @@ def _compute_structure_factor(
       DiceLattice, bz_dice, visonham
   )
   # results are (q_index, omega) array
-  sf_results = sf_cls.structure_factor_partially_contracted(points_q, omegas)
-  sf_coords = {'q_index': np.arange(len(points_q)), 'omega': omegas, }
+  # time code
+  start_time = datetime.now()
+  if sf_type == 'static_structure_factor':
+    sf_fn = sf_cls.compute_static_structure_factor
+    sf_fn_jit = jax.jit(sf_fn)
+    # sf_fn_vmap = jax.vmap(sf_fn, in_axes=(0,))
+    # sf_fn_jit = jax.jit(sf_fn_vmap)
+    # Batch computations to avoid memory issues.
+    sf_results = jax.lax.map(sf_fn_jit, points_q, batch_size=500)[..., jnp.newaxis]
+    omegas = np.array([0.])
+
+    # sf_results = sf_cls.static_structure_factor_partially_contracted(points_q)
+  elif sf_type == 'dynamic_structure_factor':
+    sf_results = sf_cls.structure_factor_partially_contracted(points_q, omegas)
+  else:
+    raise ValueError(f'{sf_type} not recgonized.')
+  end_time = datetime.now()
+  print(f"Time taken: {end_time - start_time}")
+  # sf_fn = PHYSICAL_PROPERTIES_REGISTRY['dynamic_structure_factor']
+  # sf_results = sf_fn(points_q, omegas)
+  sf_coords = {
+      'q_index': np.arange(len(points_q)),
+      'omega': omegas, 
+      'qxy': np.arange(2)
+  }
   sf_results_expanded = sf_results
   for _ in enumerate(ham_params):
     sf_results_expanded = sf_results_expanded[..., np.newaxis]
@@ -55,7 +82,8 @@ def _compute_structure_factor(
           'structure_factor': (
               ['q_index', 'omega'] + list(ham_params.keys()),
               sf_results_expanded
-          )
+          ), 
+          'q_points': (['q_index', 'qxy'], points_q)
       },
       coords={
           **sf_coords, 
@@ -79,7 +107,8 @@ def run_computation(config):
   q_steps = config.sf.q_steps
   CURRENT_DATE = datetime.now().strftime('%m%d')
   ds = _compute_structure_factor(
-      ham_params, bz_lattice_size, omegas, q_path_name, q_steps
+      ham_params, bz_lattice_size, omegas, q_path_name, q_steps, 
+      sf_type=config.sf.sf_type
   )
   print(ds.structure_factor)
   ds = data_utils.convert_to_real_ds(ds)

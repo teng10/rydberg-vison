@@ -83,16 +83,16 @@ def get_config():
   # Task configuration.
   config.task = config_dict.ConfigDict()
   config.task.name = DEFAULT_TASK_NAME #TODO(YT): add config option
-  config.task.bz_lattice_size = 50
+  config.task.bz_lattice_size = 10
   config.task.kwargs = {
       't': 0.5, 'm_tri': 25., 'm_hex_ratio': 2.5
   }
   # Structure factor computation.
   config.sf = config_dict.ConfigDict()
   config.sf.sf_type = 'static_structure_factor'
-  config.sf.omegas = np.linspace(.1, 7., 800)
-  config.sf.q_path_name = 'square_full' #'gamma_m_k_gamma'
-  config.sf.q_steps = 50
+  config.sf.omegas = np.linspace(.1, 7., 8)
+  config.sf.q_path_name = 'gamma_m_k_gamma'
+  config.sf.q_steps = 200
   # sweep parameters.
   config.sweep_name = 'sweep_t_m'  # Could change this in slurm script
   config.sweep_fn_registry = SWEEP_FN_REGISTRY
