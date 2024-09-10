@@ -37,6 +37,7 @@ def _compute_structure_factor(
     q_path_name: str,
     q_steps: int,
     sf_type: str,
+    sf_batch_size: int=200
 ):
   bz_dice = reciprocal_lattices.ReciprocalDiceLattice(
       bz_lattice_size, bz_lattice_size
@@ -59,7 +60,7 @@ def _compute_structure_factor(
     # sf_fn_vmap = jax.vmap(sf_fn, in_axes=(0,))
     # sf_fn_jit = jax.jit(sf_fn_vmap)
     # Batch computations to avoid memory issues.
-    sf_results = jax.lax.map(sf_fn_jit, points_q, batch_size=500)[..., jnp.newaxis]
+    sf_results = jax.lax.map(sf_fn_jit, points_q, batch_size=sf_batch_size)[..., jnp.newaxis]
     omegas = np.array([0.])
 
     # sf_results = sf_cls.static_structure_factor_partially_contracted(points_q)
@@ -110,7 +111,7 @@ def run_computation(config):
   CURRENT_DATE = datetime.now().strftime('%m%d')
   ds = _compute_structure_factor(
       ham_params, bz_lattice_size, omegas, q_path_name, q_steps, 
-      sf_type=config.sf.sf_type
+      sf_type=config.sf.sf_type, sf_batch_size=config.sf.batch_size
   )
   print(ds.structure_factor)
   ds = data_utils.convert_to_real_ds(ds)

@@ -93,6 +93,7 @@ def get_config():
   config.sf.omegas = np.linspace(.1, 7., 800)
   config.sf.q_path_name = 'square_full' #'gamma_m_k_gamma'
   config.sf.q_steps = 50
+  config.sf.batch_size = 200
   # sweep parameters.
   config.sweep_name = 'sweep_af_ferro'  # Could change this in slurm script
   config.sweep_fn_registry = SWEEP_FN_REGISTRY
