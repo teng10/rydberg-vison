@@ -76,8 +76,8 @@ def _gamma_m_k_path(bz_lattice: ReciprocalDiceLattice, n_points: int = 50):
 @register_bz_path_fn('square_full')
 def _square_full_path(
     bz_lattice: ReciprocalDiceLattice,
+    n_points: int=50, 
     square_length: float=np.pi,
-    n_points: int=50
 ):
   """Generates a path that covers the square ."""
   x = np.linspace(-square_length, square_length, n_points)

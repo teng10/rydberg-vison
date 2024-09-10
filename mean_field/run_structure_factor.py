@@ -24,7 +24,7 @@ config_flags.DEFINE_config_file('ham_config')
 FLAGS = flags.FLAGS
 
 import jax
-# jax.config.update("jax_disable_jit", True)
+jax.config.update("jax_disable_jit", True)
 jax.config.update("jax_enable_x64", True)
 
 
@@ -44,7 +44,9 @@ def _compute_structure_factor(
   visonham = hamiltonians.IsingHuhHamiltonian(ham_params) # Hamiltonian
   DiceLattice = lattices.EnlargedDiceLattice() # Create Dice lattice
   # Define q points on the full Brillouin zone
-  points_q = reciprocal_lattices.BZ_PATH_REGISTRY[q_path_name](bz_dice, q_steps)
+  points_q = reciprocal_lattices.BZ_PATH_REGISTRY[q_path_name](
+      bz_dice, n_points=q_steps
+  )
   sf_cls = structure_factor.DynamicalStructureFactor(
       DiceLattice, bz_dice, visonham
   )
