@@ -24,8 +24,8 @@ config_flags.DEFINE_config_file('ham_config')
 FLAGS = flags.FLAGS
 
 import jax
-jax.config.update("jax_disable_jit", True)
-jax.config.update("jax_enable_x64", True)
+# jax.config.update("jax_disable_jit", True)
+# jax.config.update("jax_enable_x64", True)
 
 
 PHYSICAL_PROPERTIES_REGISTRY = structure_factor.PHYSICAL_PROPERTIES_REGISTRY
