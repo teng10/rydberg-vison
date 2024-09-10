@@ -74,10 +74,15 @@ def _gamma_m_k_path(bz_lattice: ReciprocalDiceLattice, n_points: int = 50):
 
 
 @register_bz_path_fn('square_full')
-def _square_full_path(sqaure_length: float=np.pi, n_points: int=50):
+def _square_full_path(
+    bz_lattice: ReciprocalDiceLattice,
+    square_length: float=np.pi,
+    n_points: int=50
+):
   """Generates a path that covers the square ."""
-  xv = np.linspace(-sqaure_length, sqaure_length, n_points)
-  yv = np.linspace(-sqaure_length, sqaure_length, n_points)
+  x = np.linspace(-square_length, square_length, n_points)
+  y = np.linspace(-square_length, square_length, n_points)
+  xv, yv = np.meshgrid(x, y)
   xy_grid = np.stack([xv.T, yv.T])
   return einops.rearrange(xy_grid, 'p x y -> (x y) p')
 

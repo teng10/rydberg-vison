@@ -94,7 +94,7 @@ def get_config():
   config.sf.q_path_name = 'square_full' #'gamma_m_k_gamma'
   config.sf.q_steps = 50
   # sweep parameters.
-  config.sweep_name = 'sweep_t_m'  # Could change this in slurm script
+  config.sweep_name = 'sweep_af_ferro'  # Could change this in slurm script
   config.sweep_fn_registry = SWEEP_FN_REGISTRY
   # Save options.
   config.output = config_dict.ConfigDict()
