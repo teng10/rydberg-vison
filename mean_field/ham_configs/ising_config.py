@@ -5,7 +5,7 @@ import numpy as np
 from ml_collections import config_dict
 
 home = os.path.expanduser('~')
-DEFAULT_TASK_NAME = 'vison_ising'
+# DEFAULT_TASK_NAME = 'ising_pi_flux'
 
 
 def sweep_param_fn(
@@ -82,7 +82,7 @@ def get_config():
   config.task_id = config_dict.placeholder(int)
   # Task configuration.
   config.task = config_dict.ConfigDict()
-  config.task.name = DEFAULT_TASK_NAME #TODO(YT): add config option
+  config.task.name = 'ising_zero_flux' #'ising_pi_flux'
   config.task.bz_lattice_size = 50
   config.task.kwargs = {
       't': 0.5, 'm_tri': 25., 'm_hex_ratio': 2.5

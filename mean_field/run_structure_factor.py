@@ -1,5 +1,5 @@
 """Main file for running computations of structure factor."""
-  # run this script with the following command in the terminal:
+# run this script with the following command in the terminal:
 # python -m mean_field.run_structure_factor \
 # --ham_config=mean_field/ham_configs/ising_config_test.py \
 # --ham_config.job_id=1 \
@@ -32,17 +32,19 @@ PHYSICAL_PROPERTIES_REGISTRY = structure_factor.PHYSICAL_PROPERTIES_REGISTRY
 
 def _compute_structure_factor(
     ham_params: dict,
+    ham: str, 
     bz_lattice_size: int,
     omegas: np.ndarray,
     q_path_name: str,
     q_steps: int,
     sf_type: str,
-    sf_batch_size: int=200
+    sf_batch_size: int
 ):
   bz_dice = reciprocal_lattices.ReciprocalDiceLattice(
       bz_lattice_size, bz_lattice_size
-  ) # Brillouin zone
-  visonham = hamiltonians.IsingHuhHamiltonian(ham_params) # Hamiltonian
+  ) # reduced Brillouin zone
+  # visonham = hamiltonians.IsingHuhHamiltonian(ham_params) # Hamiltonian
+  visonham = hamiltonians.HAMILTONIAN_REGISTRY[ham](ham_params) # Hamiltonian
   DiceLattice = lattices.EnlargedDiceLattice() # Create Dice lattice
   # Define q points on the full Brillouin zone
   points_q = reciprocal_lattices.BZ_PATH_REGISTRY[q_path_name](
@@ -57,8 +59,6 @@ def _compute_structure_factor(
   if sf_type == 'static_structure_factor':
     sf_fn = sf_cls.compute_static_structure_factor
     sf_fn_jit = jax.jit(sf_fn)
-    # sf_fn_vmap = jax.vmap(sf_fn, in_axes=(0,))
-    # sf_fn_jit = jax.jit(sf_fn_vmap)
     # Batch computations to avoid memory issues.
     sf_results = jax.lax.map(sf_fn_jit, points_q, batch_size=sf_batch_size)[..., jnp.newaxis]
     omegas = np.array([0.])
@@ -70,8 +70,6 @@ def _compute_structure_factor(
     raise ValueError(f'{sf_type} not recgonized.')
   end_time = datetime.now()
   print(f"Time taken: {end_time - start_time}")
-  # sf_fn = PHYSICAL_PROPERTIES_REGISTRY['dynamic_structure_factor']
-  # sf_results = sf_fn(points_q, omegas)
   sf_coords = {
       'q_index': np.arange(len(points_q)),
       'omega': omegas, 
@@ -103,6 +101,7 @@ def run_computation(config):
   else:
     raise ValueError(f'{config.sweep_name} not in sweep_fn_registry.')  
   ham_params = config.task.kwargs
+  ham = config.task.name
   print(f"ham_params: {ham_params}")
   bz_lattice_size = config.task.bz_lattice_size
   omegas = config.sf.omegas
@@ -110,7 +109,7 @@ def run_computation(config):
   q_steps = config.sf.q_steps
   CURRENT_DATE = datetime.now().strftime('%m%d')
   ds = _compute_structure_factor(
-      ham_params, bz_lattice_size, omegas, q_path_name, q_steps, 
+      ham_params, ham, bz_lattice_size, omegas, q_path_name, q_steps, 
       sf_type=config.sf.sf_type, sf_batch_size=config.sf.batch_size
   )
   print(ds.structure_factor)

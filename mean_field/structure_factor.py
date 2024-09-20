@@ -227,6 +227,8 @@ class DynamicalStructureFactor(abc.ABC):
     spectrum_qmk = self.hamiltonian.get_eignenvalue_spectra(
         -(self.kpoints - q_vector)
     )
+    # Compute kmq using symmetry
+    # spectrum_kmq = hamiltonians._get_mk_spectra_symmetry(spectrum_qmk)
     spectrum_kmq = self.hamiltonian.get_eignenvalue_spectra(
         (self.kpoints - q_vector)
     )    
@@ -380,11 +382,9 @@ class DynamicalStructureFactor(abc.ABC):
     """Compute static structure factor for a single q."""
 
     sf_all_qs = []
+    sf_fn_jit = jax.jit(self.calculate_static_structure_factor)
     for q_vector in tqdm.tqdm(q_vectors):
-      sf_q_partial_contraction_fn = functools.partial(
-          self.calculate_static_structure_factor,
-          ingredients=self.get_ingredients(q_vector)
-      )
-      sf_q_jitted = jax.jit(sf_q_partial_contraction_fn)
-      sf_all_qs.append(sf_q_jitted())
+      
+      sf = sf_fn_jit(self.get_ingredients(q_vector))
+      sf_all_qs.append(sf)
     return jnp.stack(sf_all_qs)

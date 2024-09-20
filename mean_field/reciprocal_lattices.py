@@ -73,6 +73,16 @@ def _gamma_m_k_path(bz_lattice: ReciprocalDiceLattice, n_points: int = 50):
   ])
 
 
+@register_bz_path_fn('ebz_gamma_m_k_gamma')
+def _gamma_m_k_path(bz_lattice: ReciprocalDiceLattice, n_points: int = 50):
+  """Generates a path from Gamma to M to K in the Brillouin zone."""
+  return np.concatenate([
+      _linspace_nd(np.array([0., 0.]), np.array([0., 2 * np.pi / np.sqrt(3)]), n_points), 
+      _linspace_nd(np.array([0., 2 * np.pi / np.sqrt(3)]), np.array([2 * np.pi / 3., 2 * np.pi / np.sqrt(3)]), n_points), 
+      _linspace_nd(np.array([2 * np.pi / 3., 2 * np.pi / np.sqrt(3)]),np.array([0., 0.]), n_points)
+  ])
+
+
 @register_bz_path_fn('square_full')
 def _square_full_path(
     bz_lattice: ReciprocalDiceLattice,

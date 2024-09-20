@@ -143,16 +143,6 @@ class DiceLattice(Lattice):
       a: float = 1.0,
   ):
     """Kagome lattice of lattice constant `a`."""
-    # self.a1 = np.array([2 * a * rho * np.sqrt(3) / 8. + a / 4., 0.0])
-    # self.a2 = np.array([
-    #     a * rho * np.sqrt(3) / 8. + a / 8., 
-    #     a * rho * 1. / 8. + a * np.sqrt(3) / 8. + a * rho / 4.
-    # ])
-    # unit_cell_points = 1. / 4. * np.array([
-    #     [a, a / np.sqrt(3.)], 
-    #     [a, a / 2. * np.sqrt(3.) + a * rho + a / (2. * np.sqrt(3.))],
-    #     [a + 4. * self.a2[0], a / 2 * np.sqrt(3.) + a * rho / 2.]
-    # ])
     self.delta1 = a * np.array([np.sqrt(3) / 2., 1. / 2.]) 
     self.delta2 = a * np.array([-np.sqrt(3) / 2., 1. / 2.])
     self.delta3 = a * np.array([0.0, -1.0])
@@ -164,8 +154,6 @@ class DiceLattice(Lattice):
     self.a1 = a * np.array([np.sqrt(3), 0.0])
     self.a2 = a * np.array([np.sqrt(3) / 2., 3. / 2.])    
     self.unit_cell = Lattice(unit_cell_points)
-
-    # self.height = np.sqrt(3) / 4.  # height of the unit cell
     self.points = unit_cell_points
 
   def get_expanded_lattice(
