@@ -5,7 +5,7 @@ import numpy as np
 from ml_collections import config_dict
 
 home = os.path.expanduser('~')
-# DEFAULT_TASK_NAME = 'ising_pi_flux'
+DEFAULT_TASK_NAME = 'ising_pi_flux'
 
 
 def sweep_param_fn(
@@ -82,17 +82,17 @@ def get_config():
   config.task_id = config_dict.placeholder(int)
   # Task configuration.
   config.task = config_dict.ConfigDict()
-  config.task.name = 'ising_zero_flux' #'ising_pi_flux'
+  config.task.name = DEFAULT_TASK_NAME # 'ising_pi_flux' #'ising_zero_flux'
   config.task.bz_lattice_size = 50
   config.task.kwargs = {
       't': 0.5, 'm_tri': 25., 'm_hex_ratio': 2.5
   }
   # Structure factor computation.
   config.sf = config_dict.ConfigDict()
-  config.sf.sf_type = 'static_structure_factor'
+  config.sf.sf_type = 'dynamic_structure_factor' #'static_structure_factor'
   config.sf.omegas = np.linspace(.1, 7., 800)
-  config.sf.q_path_name = 'square_full' #'gamma_m_k_gamma'
-  config.sf.q_steps = 50
+  config.sf.q_path_name = 'ebz_gamma_m_k_gamma'# 'square_full' #
+  config.sf.q_steps = 100
   config.sf.batch_size = 30
   # sweep parameters.
   config.sweep_name = 'sweep_af_ferro'  # Could change this in slurm script

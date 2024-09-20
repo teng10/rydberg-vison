@@ -143,6 +143,11 @@ class DiceLattice(Lattice):
       a: float = 1.0,
   ):
     """Kagome lattice of lattice constant `a`."""
+    # Yejin's orientation
+    # self.delta1 = a * np.array([1. / 2., np.sqrt(3) / 2.])
+    # self.delta2 = a * np.array([-1, 0])
+    # self.delta3 = a * np.array([1. / 2., -np.sqrt(3) / 2.])   
+    # Our convention 
     self.delta1 = a * np.array([np.sqrt(3) / 2., 1. / 2.]) 
     self.delta2 = a * np.array([-np.sqrt(3) / 2., 1. / 2.])
     self.delta3 = a * np.array([0.0, -1.0])
@@ -151,6 +156,10 @@ class DiceLattice(Lattice):
         self.delta3, 
         self.delta1 + self.delta3,
     ])    
+    # Yejin's orientation
+    # self.a1 = a * np.array([3. / 2., np.sqrt(3) / 2.])
+    # self.a2 = a * np.array([0., -np.sqrt(3)])  
+    # Our convention      
     self.a1 = a * np.array([np.sqrt(3), 0.0])
     self.a2 = a * np.array([np.sqrt(3) / 2., 3. / 2.])    
     self.unit_cell = Lattice(unit_cell_points)
@@ -175,9 +184,14 @@ class EnlargedDiceLattice(Lattice):
       a: float = 1.0,
   ):
     """Kagome lattice of lattice constant `a`."""
+    # Yujin's convention
+    # self.delta1 = a * np.array([1. / 2., np.sqrt(3) / 2.])
+    # self.delta2 = a * np.array([-1, 0])
+    # self.delta3 = a * np.array([1. / 2., -np.sqrt(3) / 2.])
+    # Our convention      
     self.delta1 = a * np.array([np.sqrt(3) / 2., 1. / 2.])
     self.delta2 = a * np.array([-np.sqrt(3) / 2., 1. / 2.])
-    self.delta3 = a * np.array([0.0, -1.0])
+    self.delta3 = a * np.array([0.0, -1.0])    
     unit_cell_points = np.array([
         np.array([0.0, 0.0]),
         self.delta1, 
@@ -194,8 +208,12 @@ class EnlargedDiceLattice(Lattice):
     ])
     self.sublattice = len(unit_cell_points)
     self.unit_cell = Lattice(unit_cell_points)
-    self.a1 = a * np.array([2 * np.sqrt(3), 0.0])
-    self.a2 = a * np.array([np.sqrt(3), 3.0])
+    # Yejin's orientation
+    # self.a1 = a * np.array([3. / 2., np.sqrt(3) / 2.])
+    # self.a2 = a * np.array([0., -np.sqrt(3)])  
+    # Our convention      
+    self.a1 = a * np.array([np.sqrt(3), 0.0])
+    self.a2 = a * np.array([np.sqrt(3) / 2., 3. / 2.])   
     # self.height = np.sqrt(3) / 4.  # height of the unit cell
     self.points = unit_cell_points
 

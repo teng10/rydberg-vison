@@ -172,6 +172,10 @@ class IsingHuhHamiltonian(ClassicalHamiltonian):
     t = self.params['t']
     mass_tri = self.params['m_tri']
     mass_hex = self.params['m_hex_ratio'] * mass_tri
+    # Yejin's convention
+    # u = np.array([3. / 2., np.sqrt(3.) / 2.])
+    # v = np.array([0., - np.sqrt(3)])    
+    # Our convention      
     u = np.array([np.sqrt(3.), 0.])
     v = np.array([np.sqrt(3.) / 2., -3. / 2.])
     k = jnp.array([kx, ky])
@@ -254,6 +258,10 @@ class IsingZeroFluxHamiltonian(ClassicalHamiltonian):
     t = self.params['t']
     mass_tri = self.params['m_tri']
     mass_hex = self.params['m_hex_ratio'] * mass_tri
+    # Yejin's convention
+    # u = np.array([3. / 2., np.sqrt(3.) / 2.])
+    # v = np.array([0., - np.sqrt(3)])    
+    # Our convention      
     u = np.array([np.sqrt(3.), 0.])
     v = np.array([np.sqrt(3.) / 2., -3. / 2.])
     k = jnp.array([kx, ky])
