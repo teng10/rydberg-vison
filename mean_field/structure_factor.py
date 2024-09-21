@@ -41,7 +41,7 @@ class DynamicalStructureFactor(abc.ABC):
       hamiltonian: Hamiltonian,
   ):
     self.delta = lattice.delta()
-    self.eta = lattice.eta()
+    self.eta = hamiltonian.eta()
     self.hamiltonian = hamiltonian
     self.sublattice = hamiltonian.sublattice
     self.kpoints = bz_lattice.kpoints
@@ -211,6 +211,7 @@ class DynamicalStructureFactor(abc.ABC):
       structure_factor_qs.append(first_term + second_term)
     return jnp.array(structure_factor_qs)
 
+  @functools.partial(jax.jit, static_argnums=0)
   def compute_static_structure_factor(
       self,
       q_vector: np.ndarray,
@@ -374,7 +375,7 @@ class DynamicalStructureFactor(abc.ABC):
       sf_all_qs.append(sf_q_vmap_jitted(omegas))
     return jnp.stack(sf_all_qs) 
 
-  # @register_property_fn('static_structure_factor')
+  # For loop computation of static structure factor 
   def static_structure_factor_partially_contracted(
         self, 
         q_vectors: np.ndarray
@@ -384,7 +385,6 @@ class DynamicalStructureFactor(abc.ABC):
     sf_all_qs = []
     sf_fn_jit = jax.jit(self.calculate_static_structure_factor)
     for q_vector in tqdm.tqdm(q_vectors):
-      
       sf = sf_fn_jit(self.get_ingredients(q_vector))
       sf_all_qs.append(sf)
     return jnp.stack(sf_all_qs)

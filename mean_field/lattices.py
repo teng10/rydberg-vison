@@ -165,6 +165,11 @@ class DiceLattice(Lattice):
     self.unit_cell = Lattice(unit_cell_points)
     self.points = unit_cell_points
 
+  def delta(self):
+    """Definition of sublattice displacement tensor."""
+    delta_tensor = np.zeros((self.sublattice, self.sublattice, 2))
+    pass
+  
   def get_expanded_lattice(
       self,
       size_x: int,

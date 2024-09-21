@@ -187,7 +187,7 @@ class IsingHuhHamiltonian(ClassicalHamiltonian):
     # Define the coupling matrix.
     coupling_mat = jnp.zeros(
         (self.sublattice, self.sublattice),
-        dtype=jnp.complex128
+        dtype=jnp.complex64
     )
     coupling_mat = coupling_mat.at[1, 0].set(1.)
     coupling_mat = coupling_mat.at[2, 0].set(1.)
@@ -228,6 +228,39 @@ class IsingHuhHamiltonian(ClassicalHamiltonian):
     ) ** 2
     ham_mat += jnp.diag(field_onsite)
     return ham_mat
+  
+  def eta(self):
+    """Definition of sublattice frustrated bond values."""
+    eta_mat = np.zeros((self.sublattice, self.sublattice))
+    # alpha = 2
+    eta_mat[1, 0] = 1.
+    eta_mat[1, 3] = 1.
+    eta_mat[1, 4] = 1.
+    eta_mat[1, 5] = -1.
+    eta_mat[1, 10] = -1.
+    eta_mat[1, 11] = 1.
+    # alpha = 3
+    eta_mat[2, 0] = 1.
+    eta_mat[2, 3] = 1.
+    eta_mat[2, 4] = -1.
+    eta_mat[2, 6] = 1.
+    eta_mat[2, 9] = 1.
+    eta_mat[2, 11] = -1.
+    # alpha = 8
+    eta_mat[7, 0] = 1.
+    eta_mat[7, 3] = 1.
+    eta_mat[7, 5] = 1.
+    eta_mat[7, 6] = -1.
+    eta_mat[7, 9] = -1.
+    eta_mat[7, 10] = 1.
+    # alpha = 9
+    eta_mat[8, 4] = 1.
+    eta_mat[8, 5] = 1.
+    eta_mat[8, 6] = 1.
+    eta_mat[8, 9] = 1.
+    eta_mat[8, 10] = 1.
+    eta_mat[8, 11] = 1.
+    return eta_mat + np.transpose(eta_mat)  
 
 
 class IsingZeroFluxHamiltonian(ClassicalHamiltonian):
@@ -241,7 +274,7 @@ class IsingZeroFluxHamiltonian(ClassicalHamiltonian):
       self,
       params: dict,
       brillouin_zone = None,
-      sublattice: int = 12,
+      sublattice: int = 3,
       t0: float = 1. # nn coupling
   ):
     self.params = params
@@ -265,53 +298,28 @@ class IsingZeroFluxHamiltonian(ClassicalHamiltonian):
     u = np.array([np.sqrt(3.), 0.])
     v = np.array([np.sqrt(3.) / 2., -3. / 2.])
     k = jnp.array([kx, ky])
-    nnn_1 = t * (1. + jnp.exp(2.j * k @ u) + jnp.exp(2.j * k @ (u - v)))
-    nnn_2 = t * (1. + jnp.exp(2.j * k @ u) + jnp.exp(2.j * k @ v))
-    nnn_3 = t * (1. + jnp.exp(2.j * k @ v) + jnp.exp(2.j * k @ (v - u)))
-    nn_1 = self.t0 * jnp.exp(2.j * k @ u)
-    nn_2 = self.t0 * jnp.exp(2.j * k @ v)
+    nnn_1 = t * jnp.exp(1.j * k @ (u - v))
+    nn_1 = self.t0 * jnp.exp(1.j * k @ u)
+    nn_2 = self.t0 * jnp.exp(1.j * k @ v)
     # Define the coupling matrix.
     coupling_mat = jnp.zeros(
         (self.sublattice, self.sublattice),
-        dtype=jnp.complex128
+        dtype=jnp.complex64
     )
-    coupling_mat = coupling_mat.at[1, 0].set(1.)
-    coupling_mat = coupling_mat.at[2, 0].set(1.)
-    coupling_mat = coupling_mat.at[3, 0].set(nnn_1)
-    coupling_mat = coupling_mat.at[7, 0].set(nn_1)
-    coupling_mat = coupling_mat.at[3, 1].set(1.)
-    coupling_mat = coupling_mat.at[4, 1].set(1.)
-    coupling_mat = coupling_mat.at[5, 1].set(1.)
-    coupling_mat = coupling_mat.at[10, 1].set(nn_2)
-    coupling_mat = coupling_mat.at[11, 1].set(nn_2)
-    coupling_mat = coupling_mat.at[3, 2].set(nn_1 * jnp.conjugate(nn_2))
-    coupling_mat = coupling_mat.at[4, 2].set(1.)
-    coupling_mat = coupling_mat.at[6, 2].set(1.)
-    coupling_mat = coupling_mat.at[9, 2].set(nn_1)
-    coupling_mat = coupling_mat.at[11, 2].set(nn_1)
-    coupling_mat = coupling_mat.at[7, 3].set(1.)
-    coupling_mat = coupling_mat.at[8, 4].set(1.)
-    coupling_mat = coupling_mat.at[11, 4].set(nnn_2)
-    coupling_mat = coupling_mat.at[7, 5].set(1.)
-    coupling_mat = coupling_mat.at[8, 5].set(1.)
-    coupling_mat = coupling_mat.at[10, 5].set(nnn_3)
-    coupling_mat = coupling_mat.at[7, 6].set(1. * nn_1 * jnp.conjugate(nn_2))
-    coupling_mat = coupling_mat.at[8, 6].set(1.)
-    coupling_mat = coupling_mat.at[9, 6].set(nnn_1)
-    coupling_mat = coupling_mat.at[9, 7].set(1.)
-    coupling_mat = coupling_mat.at[10, 7].set(jnp.conjugate(nn_1) * nn_2)
-    coupling_mat = coupling_mat.at[9, 8].set(1.)
-    coupling_mat = coupling_mat.at[10, 8].set(1.)
-    coupling_mat = coupling_mat.at[11, 8].set(1.)
+    coupling_mat = coupling_mat.at[0, 1].set(jnp.conjugate(nn_1))
+    coupling_mat = coupling_mat.at[0, 2].set(3. * nnn_1)
+    coupling_mat = coupling_mat.at[1, 2].set(jnp.conjugate(nn_2))
     # Fill in complex conjugate. Minus sign for - J \sum_{<i, j>} H_ij.
     ham_mat =  - (coupling_mat + jnp.conjugate(jnp.transpose(coupling_mat)))
     # add onsite term.
-    field_onsite = jnp.array(
-      [
-      mass_tri, mass_hex, mass_hex, mass_tri, mass_tri, mass_tri,
-      mass_tri, mass_hex, mass_hex, mass_tri, mass_tri, mass_tri
-      ]
-    ) ** 2
+    field_onsite = jnp.array([mass_tri, mass_hex, mass_tri]) ** 2
     ham_mat += jnp.diag(field_onsite)
     return ham_mat
   
+  def eta(self):
+    """Definition of sublattice frustrated bond values."""
+    eta_mat = np.zeros((self.sublattice, self.sublattice))
+    eta_mat[0, 1] = 1.
+    eta_mat[0, 2] = 1.
+    eta_mat[1, 2] = 1.
+    return eta_mat + np.transpose(eta_mat)  

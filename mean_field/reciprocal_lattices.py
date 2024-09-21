@@ -97,6 +97,26 @@ def _square_full_path(
   return einops.rearrange(xy_grid, 'p x y -> (x y) p')
 
 
+@register_bz_path_fn('ebz_corner')
+def _ebz_corner(
+    bz_lattice:ReciprocalDiceLattice,
+    n_points:int=50, 
+    height:float=4. * np.pi / 3.,
+    width:float=4. * np.pi / (3. * np.sqrt(3.)),
+):
+  """Generates a path that covers the square ."""
+  x = np.linspace(0, width, n_points)
+  y = np.linspace(0, height, n_points)
+  xv, yv = np.meshgrid(x, y)
+  xy_grid = np.stack([xv.T, yv.T])
+  xy_points = einops.rearrange(xy_grid, 'p x y -> (x y) p')
+  points = []
+  for pt in xy_points:
+    if pt[1] >= pt[0] * np.sqrt(3):
+      points.append(pt)
+  return np.array(points)
+
+
 @dataclasses.dataclass
 class ReciprocalDiceLattice:
   size_x: int

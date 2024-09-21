@@ -89,10 +89,10 @@ def get_config():
   }
   # Structure factor computation.
   config.sf = config_dict.ConfigDict()
-  config.sf.sf_type = 'dynamic_structure_factor' #'static_structure_factor'
+  config.sf.sf_type = 'static_structure_factor' #'dynamic_structure_factor'
   config.sf.omegas = np.linspace(.1, 7., 800)
-  config.sf.q_path_name = 'ebz_gamma_m_k_gamma'# 'square_full' #
-  config.sf.q_steps = 100
+  config.sf.q_path_name = 'ebz_corner' # 'ebz_gamma_m_k_gamma'#
+  config.sf.q_steps = 40
   config.sf.batch_size = 30
   # sweep parameters.
   config.sweep_name = 'sweep_af_ferro'  # Could change this in slurm script

@@ -1,7 +1,10 @@
 """Main file for running computations of structure factor."""
 # run this script with the following command in the terminal:
 # python -m mean_field.run_structure_factor \
-# --ham_config=mean_field/ham_configs/ising_config_test.py \
+# --ham_config=mean_field/ham_configs/python -m mean_field.run_structure_factor \
+# --ham_config=mean_field/ham_configs/ising_config_dynamic_test.py \
+# --ham_config.job_id=1 \
+# --ham_config.task_id=0.py \
 # --ham_config.job_id=1 \
 # --ham_config.task_id=0
 from absl import app
@@ -24,7 +27,7 @@ config_flags.DEFINE_config_file('ham_config')
 FLAGS = flags.FLAGS
 
 import jax
-# jax.config.update("jax_disable_jit", True)
+jax.config.update("jax_disable_jit", True)
 # jax.config.update("jax_enable_x64", True)
 
 
@@ -46,6 +49,7 @@ def _compute_structure_factor(
   # visonham = hamiltonians.IsingHuhHamiltonian(ham_params) # Hamiltonian
   visonham = hamiltonians.HAMILTONIAN_REGISTRY[ham](ham_params) # Hamiltonian
   DiceLattice = lattices.EnlargedDiceLattice() # Create Dice lattice
+  # DiceLattice = lattices.DiceLattice()
   # Define q points on the full Brillouin zone
   points_q = reciprocal_lattices.BZ_PATH_REGISTRY[q_path_name](
       bz_dice, n_points=q_steps
@@ -57,10 +61,12 @@ def _compute_structure_factor(
   # time code
   start_time = datetime.now()
   if sf_type == 'static_structure_factor':
-    sf_fn = sf_cls.compute_static_structure_factor
-    sf_fn_jit = jax.jit(sf_fn)
-    # Batch computations to avoid memory issues.
-    sf_results = jax.lax.map(sf_fn_jit, points_q, batch_size=sf_batch_size)[..., jnp.newaxis]
+    sf_fn = sf_cls.static_structure_factor_partially_contracted
+    sf_results = sf_fn(points_q)[..., jnp.newaxis]
+    # sf_fn = sf_cls.compute_static_structure_factor
+    # sf_fn_jit = jax.jit(sf_fn)
+    # # Batch computations to avoid memory issues.
+    # sf_results = jax.lax.map(sf_fn_jit, points_q, batch_size=sf_batch_size)[..., jnp.newaxis]
     omegas = np.array([0.])
 
     # sf_results = sf_cls.static_structure_factor_partially_contracted(points_q)
