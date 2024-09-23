@@ -91,7 +91,7 @@ def get_config():
   config.sf = config_dict.ConfigDict()
   config.sf.sf_type = 'static_structure_factor' #'dynamic_structure_factor'
   config.sf.omegas = np.linspace(.1, 7., 800)
-  config.sf.q_path_name = 'ebz_corner' # 'ebz_gamma_m_k_gamma'#
+  config.sf.q_path_name = 'ebz_square' #'ebz_corner' # 'ebz_gamma_m_k_gamma'#
   config.sf.q_steps = 40
   config.sf.batch_size = 30
   # sweep parameters.

@@ -117,6 +117,21 @@ def _ebz_corner(
   return np.array(points)
 
 
+@register_bz_path_fn('ebz_square')
+def _ebz_corner(
+    bz_lattice:ReciprocalDiceLattice,
+    n_points:int=50, 
+    height:float=4. * np.pi / 3.,
+    width:float=5,
+):
+  """Generates a path that covers the square ."""
+  x = np.linspace(-width, width, n_points)
+  y = np.linspace(-height, height, n_points)
+  xv, yv = np.meshgrid(x, y)
+  xy_grid = np.stack([xv.T, yv.T])
+  return einops.rearrange(xy_grid, 'p x y -> (x y) p')
+
+
 @dataclasses.dataclass
 class ReciprocalDiceLattice:
   size_x: int
